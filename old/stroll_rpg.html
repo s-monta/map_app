@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sunny Paws Promenade</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg1: #fff7ed;
+        --bg2: #fde68a;
+        --panel: rgba(255, 251, 235, 0.82);
+        --panel-strong: rgba(255, 248, 220, 0.94);
+        --border: rgba(180, 83, 9, 0.16);
+        --text: #4a2f1b;
+        --muted: #8a6244;
+        --accent: #fb923c;
+        --accent-2: #f472b6;
+        --green: #34d399;
+        --blue: #60a5fa;
+        --shadow: 0 24px 70px rgba(120, 53, 15, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.6), transparent 24%),
+          linear-gradient(180deg, var(--bg1), var(--bg2));
+        color: var(--text);
+        font-family: "Nunito", "Hiragino Sans", "Noto Sans JP", sans-serif;
+      }
+
+      body {
+        position: relative;
+      }
+
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .panel {
+        position: absolute;
+        z-index: 3;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(16px);
+        box-shadow: var(--shadow);
+      }
+
+      .topbar {
+        top: 16px;
+        left: 16px;
+        right: 16px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+        gap: 16px;
+        padding: 16px;
+        border-radius: 26px;
+      }
+
+      .sidebar {
+        left: 16px;
+        bottom: 16px;
+        width: min(430px, calc(100vw - 32px));
+        padding: 18px;
+        border-radius: 24px;
+      }
+
+      .dialog {
+        right: 16px;
+        bottom: 16px;
+        width: min(400px, calc(100vw - 32px));
+        padding: 18px;
+        border-radius: 24px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: rgba(251, 146, 60, 0.14);
+        color: var(--accent);
+        border: 1px solid rgba(251, 146, 60, 0.18);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      .title {
+        margin-top: 10px;
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+      }
+
+      .copy,
+      .muted,
+      .label,
+      .hint {
+        color: var(--muted);
+      }
+
+      .copy {
+        margin-top: 10px;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .stats,
+      .cards,
+      .actions,
+      .quest-list,
+      .stamp-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stats,
+      .cards,
+      .quest-list,
+      .stamp-list {
+        margin-top: 14px;
+      }
+
+      .stat,
+      .card,
+      .quest,
+      .stamp,
+      .line {
+        padding: 12px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.46);
+        border: 1px solid rgba(180, 83, 9, 0.08);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 800;
+      }
+
+      .quest.is-active {
+        border-color: rgba(244, 114, 182, 0.24);
+        box-shadow: 0 0 0 1px rgba(244, 114, 182, 0.16) inset;
+      }
+
+      .stamp.is-done {
+        background: rgba(52, 211, 153, 0.18);
+        border-color: rgba(52, 211, 153, 0.22);
+      }
+
+      .stamp-icon,
+      .quest-title,
+      .card-title {
+        font-weight: 800;
+      }
+
+      .dialog-name {
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .dialog-box {
+        margin-top: 14px;
+        padding: 16px;
+        border-radius: 18px;
+        background: var(--panel-strong);
+        border: 1px solid rgba(180, 83, 9, 0.1);
+      }
+
+      .dialog-copy {
+        margin-top: 10px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .controls {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 14px;
+        padding: 10px 14px;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        background: linear-gradient(135deg, rgba(251, 146, 60, 0.18), rgba(244, 114, 182, 0.18));
+        transition: transform 160ms ease, opacity 160ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button.secondary {
+        background: rgba(255, 255, 255, 0.55);
+        border-color: rgba(180, 83, 9, 0.08);
+      }
+
+      .toast {
+        position: absolute;
+        top: 108px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-16px);
+        z-index: 5;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 250, 240, 0.96);
+        border: 1px solid rgba(251, 146, 60, 0.18);
+        color: var(--text);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 220ms ease;
+        box-shadow: var(--shadow);
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .center-card {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 4;
+        width: min(520px, calc(100vw - 32px));
+        padding: 22px;
+        border-radius: 30px;
+        text-align: center;
+        background: rgba(255, 250, 240, 0.9);
+        border: 1px solid rgba(180, 83, 9, 0.12);
+        box-shadow: var(--shadow);
+      }
+
+      .center-card.hidden {
+        display: none;
+      }
+
+      .big {
+        font-size: clamp(34px, 8vw, 78px);
+        letter-spacing: -0.06em;
+      }
+
+      @media (max-width: 980px) {
+        .topbar {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        html,
+        body {
+          overflow: auto;
+        }
+
+        canvas {
+          position: fixed;
+          inset: 0;
+        }
+
+        .panel {
+          position: static;
+          margin: 12px;
+        }
+
+        .stats,
+        .cards {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <section class="panel topbar">
+      <div>
+        <div class="badge">Cozy Walk RPG</div>
+        <h1 class="title">Sunny Paws Promenade</h1>
+        <p class="copy">
+          ぽかぽかした動物の街を歩き回り、住人たちとおしゃべりして“さんぽスタンプ”を集める、戦闘なしののんびりRPGです。`WASD` / 矢印で移動、`E` で話す、`Shift` でちょっと早歩き。
+        </p>
+        <div class="actions">
+          <button id="startButton">さんぽ開始 / リセット</button>
+          <button id="pauseButton" class="secondary">一時停止</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Place</div>
+          <div class="value" id="placeValue">Plaza</div>
+        </div>
+        <div class="stat">
+          <div class="label">Friendship</div>
+          <div class="value" id="friendshipValue">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Stamps</div>
+          <div class="value" id="stampValue">0 / 5</div>
+        </div>
+        <div class="stat">
+          <div class="label">Mood</div>
+          <div class="value" id="moodValue">るんるん</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel sidebar">
+      <div class="label">Player</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">こだぬき トト</div>
+          <div class="muted" id="playerStatus">やわらかい足どりで、街をのんびり散歩中。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Today's Goal</div>
+          <div class="muted" id="goalText">動物のおともだち 5 人に会ってみよう。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Nearby</div>
+          <div class="muted" id="nearbyText">広場には白うさぎのパン屋さんがいます。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Hint</div>
+          <div class="muted" id="hintText">話したい相手の近くで `E` を押してね。</div>
+        </div>
+      </div>
+
+      <div class="label" style="margin-top:14px">Quest Book</div>
+      <div class="quest-list" id="questList"></div>
+
+      <div class="label" style="margin-top:14px">Stamp Book</div>
+      <div class="stamp-list" id="stampList"></div>
+    </section>
+
+    <section class="panel dialog">
+      <div class="label">Conversation</div>
+      <div class="dialog-box">
+        <div class="dialog-name" id="dialogName">まだだれとも話していません</div>
+        <div class="dialog-copy" id="dialogCopy">
+          街の住人はみんなやさしいです。近づいて `E` を押すと会話できます。会うたびにスタンプが集まります。
+        </div>
+      </div>
+      <div class="controls">
+        <button id="waveButton">手をふる</button>
+        <button id="sitButton" class="secondary">ベンチで休む</button>
+      </div>
+      <div class="line" style="margin-top:14px">
+        <div class="label">Town Log</div>
+        <div class="muted" id="townLog">朝のやさしい風が、花壇の花をふわっと揺らしています。</div>
+      </div>
+    </section>
+
+    <div class="center-card" id="centerCard">
+      <div class="badge">Cozy RPG</div>
+      <h2 class="big">Sunny Paws</h2>
+      <p class="copy">白うさぎ、黒ねこ、くま、きつね、あひるたちが暮らす小さな街。今日はただ、気ままにお散歩しよう。</p>
+      <div class="controls" style="justify-content:center; margin-top:16px">
+        <button id="overlayStartButton">街へ出かける</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const canvas = document.getElementById('game');
+      const context = canvas.getContext('2d');
+      const placeValue = document.getElementById('placeValue');
+      const friendshipValue = document.getElementById('friendshipValue');
+      const stampValue = document.getElementById('stampValue');
+      const moodValue = document.getElementById('moodValue');
+      const playerStatus = document.getElementById('playerStatus');
+      const goalText = document.getElementById('goalText');
+      const nearbyText = document.getElementById('nearbyText');
+      const hintText = document.getElementById('hintText');
+      const dialogName = document.getElementById('dialogName');
+      const dialogCopy = document.getElementById('dialogCopy');
+      const townLog = document.getElementById('townLog');
+      const questList = document.getElementById('questList');
+      const stampList = document.getElementById('stampList');
+      const toast = document.getElementById('toast');
+      const centerCard = document.getElementById('centerCard');
+      const startButton = document.getElementById('startButton');
+      const overlayStartButton = document.getElementById('overlayStartButton');
+      const pauseButton = document.getElementById('pauseButton');
+      const waveButton = document.getElementById('waveButton');
+      const sitButton = document.getElementById('sitButton');
+
+      let width = 0;
+      let height = 0;
+      let lastTime = 0;
+      const keys = new Set();
+      const petals = [];
+      const sparkles = [];
+
+      const state = {
+        running: false,
+        paused: false,
+        friendship: 0,
+        completed: new Set(),
+        activeQuest: 'meet-friends',
+        log: '朝のやさしい風が、花壇の花をふわっと揺らしています。',
+      };
+
+      const player = {
+        x: 0,
+        y: 0,
+        radius: 18,
+        speed: 160,
+        facing: 1,
+        isSitting: false,
+        waveTime: 0,
+      };
+
+      const benches = [
+        { x: 250, y: 480, width: 90, height: 24 },
+        { x: 760, y: 220, width: 90, height: 24 },
+      ];
+
+      const zones = [
+        { id: 'plaza', name: 'Plaza', x: 0, y: 0, width: 440, height: 260 },
+        { id: 'bakery', name: 'Bakery', x: 0, y: 260, width: 420, height: 260 },
+        { id: 'garden', name: 'Garden', x: 420, y: 0, width: 340, height: 280 },
+        { id: 'library', name: 'Library', x: 760, y: 0, width: 300, height: 280 },
+        { id: 'river', name: 'Riverside', x: 420, y: 280, width: 640, height: 300 },
+      ];
+
+      const npcs = [
+        {
+          id: 'mimi',
+          name: 'ミミ',
+          title: '白うさぎのパン屋さん',
+          species: 'rabbit',
+          x: 180,
+          y: 350,
+          color: '#f9a8d4',
+          stamp: '🥐',
+          zone: 'bakery',
+          lines: [
+            '焼きたてのにんじんパン、ふわふわなんだよ。',
+            'さんぽの途中なら、甘いミルクパンもおすすめ！',
+          ],
+        },
+        {
+          id: 'kuromi',
+          name: 'クロミ',
+          title: '黒ねこの花屋さん',
+          species: 'cat',
+          x: 560,
+          y: 170,
+          color: '#c4b5fd',
+          stamp: '🌷',
+          zone: 'garden',
+          lines: [
+            'この季節はピンクのお花がいちばんごきげん。',
+            'きみのしっぽにも花びらがついてる、かわいいね。',
+          ],
+        },
+        {
+          id: 'moro',
+          name: 'モロ',
+          title: 'くまの図書館長',
+          species: 'bear',
+          x: 900,
+          y: 170,
+          color: '#f59e0b',
+          stamp: '📚',
+          zone: 'library',
+          lines: [
+            '今日のおすすめは“ひなたぼっこの詩集”。',
+            '静かな午後に読む本は、心をやわらかくするんだ。',
+          ],
+        },
+        {
+          id: 'fifi',
+          name: 'フィフィ',
+          title: 'きつねの音楽家',
+          species: 'fox',
+          x: 640,
+          y: 420,
+          color: '#fb923c',
+          stamp: '🎵',
+          zone: 'river',
+          lines: [
+            '川辺で弾くウクレレは、風の音とよく合うよ。',
+            'もし歩く足音もリズムにしたら、街じゅうが曲になるかも。',
+          ],
+        },
+        {
+          id: 'poco',
+          name: 'ポコ',
+          title: 'あひるの噴水番',
+          species: 'duck',
+          x: 320,
+          y: 150,
+          color: '#fde047',
+          stamp: '🫧',
+          zone: 'plaza',
+          lines: [
+            '噴水を見てると、心がまるくなるねえ。',
+            '今日は水しぶきがキラキラして、いい日だよ。',
+          ],
+        },
+      ];
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('is-visible');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.remove('is-visible'), 1600);
+      }
+
+      function random(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function distance(x1, y1, x2, y2) {
+        return Math.hypot(x2 - x1, y2 - y1);
+      }
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        if (!player.x && !player.y) {
+          player.x = 150;
+          player.y = 140;
+        }
+      }
+
+      function addPetalBurst(x, y, color) {
+        for (let index = 0; index < 12; index += 1) {
+          petals.push({
+            x,
+            y,
+            vx: random(-40, 40),
+            vy: random(-20, 40),
+            size: random(3, 7),
+            life: random(0.8, 1.5),
+            maxLife: random(0.8, 1.5),
+            color,
+          });
+        }
+      }
+
+      function addSparkle(x, y, color) {
+        sparkles.push({ x, y, radius: 8, life: 0.55, maxLife: 0.55, color });
+      }
+
+      function resetGame() {
+        state.running = true;
+        state.paused = false;
+        state.friendship = 0;
+        state.completed = new Set();
+        state.activeQuest = 'meet-friends';
+        state.log = '朝のやさしい風が、花壇の花をふわっと揺らしています。';
+        player.x = 150;
+        player.y = 140;
+        player.isSitting = false;
+        player.waveTime = 0;
+        centerCard.classList.add('hidden');
+        dialogName.textContent = '街へようこそ';
+        dialogCopy.textContent = '会いたい動物のそばまで歩いて、`E` で話しかけてみよう。みんなそれぞれ違う時間の流れで暮らしています。';
+        showToast('さんぽ開始');
+        updateUi();
+        renderQuestList();
+        renderStampList();
+      }
+
+      function getCurrentZone() {
+        return (
+          zones.find(
+            (zone) =>
+              player.x >= zone.x &&
+              player.x <= zone.x + zone.width &&
+              player.y >= zone.y &&
+              player.y <= zone.y + zone.height
+          ) || zones[0]
+        );
+      }
+
+      function getNearbyNpc() {
+        let closest = null;
+        let closestDistance = Infinity;
+        for (const npc of npcs) {
+          const dist = distance(player.x, player.y, npc.x, npc.y);
+          if (dist < closestDistance) {
+            closest = npc;
+            closestDistance = dist;
+          }
+        }
+        return { npc: closest, dist: closestDistance };
+      }
+
+      function updateUi() {
+        const zone = getCurrentZone();
+        const { npc, dist } = getNearbyNpc();
+        placeValue.textContent = zone.name;
+        friendshipValue.textContent = String(state.friendship);
+        stampValue.textContent = `${state.completed.size} / ${npcs.length}`;
+        moodValue.textContent = player.isSitting ? 'ぽけー' : state.completed.size === npcs.length ? 'しあわせ' : 'るんるん';
+        playerStatus.textContent = player.isSitting
+          ? 'ベンチでひとやすみ。しっぽもぺたんと落ち着いています。'
+          : 'やわらかい足どりで、街をのんびり散歩中。';
+        goalText.textContent = state.completed.size === npcs.length ? '今日はみんなに会えた。すてきなお散歩日和！' : '動物のおともだち 5 人に会ってみよう。';
+        nearbyText.textContent = npc
+          ? dist < 90
+            ? `${npc.title}の ${npc.name} がすぐ近くにいます。`
+            : `${zone.name} のどこかに ${npc.name} がいます。`
+          : 'のんびり歩いてみよう。';
+        hintText.textContent = dist < 90 ? '`E` で話しかけられます。' : '気になる場所へ歩いてみよう。';
+        townLog.textContent = state.log;
+      }
+
+      function renderQuestList() {
+        const quests = [
+          {
+            title: 'おともだちスタンプ',
+            desc: `住人に話しかける (${state.completed.size}/${npcs.length})`,
+            active: state.completed.size < npcs.length,
+          },
+          {
+            title: 'ベンチでひとやすみ',
+            desc: player.isSitting ? '達成済み。そよ風が気持ちいい。' : '川辺か広場のベンチに座ってみる',
+            active: !player.isSitting,
+          },
+          {
+            title: 'お気に入りを見つける',
+            desc: state.completed.size === npcs.length ? '今日はみんなと仲良くなれた。' : '気になる住人ともう一度話してもいい',
+            active: false,
+          },
+        ];
+
+        questList.innerHTML = '';
+        for (const quest of quests) {
+          const node = document.createElement('div');
+          node.className = `quest${quest.active ? ' is-active' : ''}`;
+          node.innerHTML = `<div class="quest-title">${quest.title}</div><div class="muted">${quest.desc}</div>`;
+          questList.appendChild(node);
+        }
+      }
+
+      function renderStampList() {
+        stampList.innerHTML = '';
+        for (const npc of npcs) {
+          const done = state.completed.has(npc.id);
+          const node = document.createElement('div');
+          node.className = `stamp${done ? ' is-done' : ''}`;
+          node.innerHTML = `<div class="stamp-icon">${npc.stamp} ${npc.name}</div><div class="muted">${done ? 'スタンプ済み' : 'まだ会っていない'}</div>`;
+          stampList.appendChild(node);
+        }
+      }
+
+      function interact() {
+        if (!state.running || state.paused) {
+          return;
+        }
+        const { npc, dist } = getNearbyNpc();
+        if (npc && dist < 90) {
+          const line = npc.lines[Math.floor(Math.random() * npc.lines.length)];
+          dialogName.textContent = `${npc.name} · ${npc.title}`;
+          dialogCopy.textContent = line;
+          state.log = `${npc.name} とおしゃべりした。${npc.stamp} のスタンプがふんわり増えた。`;
+          if (!state.completed.has(npc.id)) {
+            state.completed.add(npc.id);
+            state.friendship += 1;
+            addPetalBurst(npc.x, npc.y, npc.color);
+            addSparkle(npc.x, npc.y, npc.color);
+            showToast(`${npc.name} のスタンプをもらった`);
+          } else {
+            addSparkle(npc.x, npc.y, npc.color);
+            showToast(`${npc.name} がにこっとした`);
+          }
+          if (state.completed.size === npcs.length) {
+            state.log = '今日のさんぽは大成功。街のみんなが手を振ってくれています。';
+            dialogName.textContent = 'さんぽコンプリート！';
+            dialogCopy.textContent = 'パンの香り、花の匂い、本の静けさ、川辺の音楽、噴水のきらめき。ぜんぶ集めて、やさしい一日になりました。';
+          }
+          renderQuestList();
+          renderStampList();
+          updateUi();
+          return;
+        }
+
+        const bench = benches.find(
+          (item) =>
+            Math.abs(player.x - item.x) < item.width / 2 + 30 &&
+            Math.abs(player.y - item.y) < item.height / 2 + 30
+        );
+        if (bench) {
+          player.isSitting = true;
+          state.log = 'ベンチにすとんと腰かけて、のんびり空を見上げた。';
+          dialogName.textContent = 'ひとやすみ';
+          dialogCopy.textContent = 'あたたかい日差しと遠くの笑い声。急がなくていい時間が、そっと流れています。';
+          showToast('ベンチでひとやすみ');
+          updateUi();
+        }
+      }
+
+      function wave() {
+        if (!state.running || state.paused) {
+          return;
+        }
+        player.waveTime = 0.8;
+        state.log = 'トトがふわっと手を振った。だれかが遠くで振り返した気がする。';
+        dialogName.textContent = 'トト';
+        dialogCopy.textContent = 'こんにちはー！ 今日はいいお天気！';
+        showToast('こんにちは！');
+        updateUi();
+      }
+
+      function sitDown() {
+        if (!state.running || state.paused) {
+          return;
+        }
+        const bench = benches.find(
+          (item) =>
+            Math.abs(player.x - item.x) < item.width / 2 + 30 &&
+            Math.abs(player.y - item.y) < item.height / 2 + 30
+        );
+        if (bench) {
+          player.isSitting = true;
+          state.log = '小さく深呼吸して、街の音に耳をすませた。';
+          showToast('すわった');
+        } else {
+          state.log = '近くにちょうどいいベンチはなさそう。';
+          showToast('ベンチが近くにない');
+        }
+        updateUi();
+      }
+
+      function drawBackground(time) {
+        const sky = context.createLinearGradient(0, 0, 0, height);
+        sky.addColorStop(0, '#fde68a');
+        sky.addColorStop(1, '#fed7aa');
+        context.fillStyle = sky;
+        context.fillRect(0, 0, width, height);
+
+        context.fillStyle = '#86efac';
+        context.fillRect(0, height * 0.62, width, height * 0.38);
+
+        context.fillStyle = '#c4b5fd';
+        context.beginPath();
+        context.arc(width - 140, 110, 46 + Math.sin(time * 0.6) * 3, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#fff7ed';
+        context.beginPath();
+        context.arc(150, 90, 40 + Math.sin(time * 0.9) * 2, 0, Math.PI * 2);
+        context.fill();
+      }
+
+      function drawTown(time) {
+        context.fillStyle = '#fef3c7';
+        context.fillRect(40, 60, 320, 170);
+        context.fillStyle = '#fca5a5';
+        context.fillRect(90, 260, 210, 130);
+        context.fillStyle = '#fcd34d';
+        context.fillRect(430, 70, 240, 160);
+        context.fillStyle = '#bfdbfe';
+        context.fillRect(800, 70, 180, 160);
+
+        context.fillStyle = '#93c5fd';
+        context.beginPath();
+        context.ellipse(740, 430, 240, 110, 0, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#fde68a';
+        context.beginPath();
+        context.arc(310, 150, 48, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = '#ffffff';
+        for (let index = 0; index < 5; index += 1) {
+          const angle = (Math.PI * 2 * index) / 5 + time * 0.5;
+          context.beginPath();
+          context.arc(310 + Math.cos(angle) * 56, 150 + Math.sin(angle) * 56, 8, 0, Math.PI * 2);
+          context.fill();
+        }
+
+        context.fillStyle = '#fdba74';
+        context.fillRect(0, 230, width, 74);
+        context.fillRect(380, 0, 74, height);
+
+        for (const bench of benches) {
+          context.fillStyle = '#92400e';
+          context.fillRect(bench.x - bench.width / 2, bench.y - bench.height / 2, bench.width, bench.height);
+          context.fillRect(bench.x - bench.width / 2 + 10, bench.y + 8, 12, 20);
+          context.fillRect(bench.x + bench.width / 2 - 22, bench.y + 8, 12, 20);
+        }
+
+        const trees = [
+          [120, 520], [500, 120], [710, 160], [870, 500], [980, 340], [560, 520],
+        ];
+        for (const [x, y] of trees) {
+          context.fillStyle = '#92400e';
+          context.fillRect(x - 8, y, 16, 52);
+          context.fillStyle = '#4ade80';
+          context.beginPath();
+          context.arc(x, y - 8 + Math.sin(time * 1.6 + x) * 3, 34, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+
+      function drawNpc(npc, time) {
+        const bob = Math.sin(time * 2 + npc.x) * 4;
+        context.save();
+        context.translate(npc.x, npc.y + bob);
+        context.shadowBlur = 18;
+        context.shadowColor = npc.color;
+        context.fillStyle = npc.color;
+        context.beginPath();
+        context.arc(0, 0, 20, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#fff7ed';
+        context.beginPath();
+        context.arc(-7, -4, 3, 0, Math.PI * 2);
+        context.arc(7, -4, 3, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#4a2f1b';
+        context.beginPath();
+        context.arc(-7, -4, 1.5, 0, Math.PI * 2);
+        context.arc(7, -4, 1.5, 0, Math.PI * 2);
+        context.fill();
+
+        if (npc.species === 'rabbit') {
+          context.fillStyle = npc.color;
+          context.fillRect(-14, -34, 8, 20);
+          context.fillRect(6, -34, 8, 20);
+        }
+        if (npc.species === 'cat' || npc.species === 'fox') {
+          context.beginPath();
+          context.moveTo(-14, -12);
+          context.lineTo(-6, -28);
+          context.lineTo(0, -12);
+          context.fill();
+          context.beginPath();
+          context.moveTo(14, -12);
+          context.lineTo(6, -28);
+          context.lineTo(0, -12);
+          context.fill();
+        }
+        if (npc.species === 'bear') {
+          context.beginPath();
+          context.arc(-12, -14, 7, 0, Math.PI * 2);
+          context.arc(12, -14, 7, 0, Math.PI * 2);
+          context.fill();
+        }
+        if (npc.species === 'duck') {
+          context.fillStyle = '#fb923c';
+          context.beginPath();
+          context.ellipse(0, 4, 8, 4, 0, 0, Math.PI * 2);
+          context.fill();
+        }
+
+        context.fillStyle = '#4a2f1b';
+        context.font = '700 13px Nunito, sans-serif';
+        context.textAlign = 'center';
+        context.fillText(npc.name, 0, -38);
+        context.restore();
+      }
+
+      function drawPlayer(time) {
+        const bounce = player.isSitting ? 0 : Math.sin(time * 10) * 1.5;
+        context.save();
+        context.translate(player.x, player.y + bounce);
+        context.shadowBlur = 18;
+        context.shadowColor = '#fb923c';
+        context.fillStyle = '#d97706';
+        context.beginPath();
+        context.arc(0, 0, player.radius, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#fef3c7';
+        context.beginPath();
+        context.arc(0, 2, player.radius * 0.58, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#4a2f1b';
+        context.beginPath();
+        context.arc(-6, -4, 2, 0, Math.PI * 2);
+        context.arc(6, -4, 2, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#f59e0b';
+        context.beginPath();
+        context.arc(-11, -15, 6, 0, Math.PI * 2);
+        context.arc(11, -15, 6, 0, Math.PI * 2);
+        context.fill();
+
+        context.strokeStyle = '#92400e';
+        context.lineWidth = 5;
+        context.beginPath();
+        context.arc(-player.facing * 16, 2, 18, Math.PI * 0.2, Math.PI * 1.2);
+        context.stroke();
+
+        if (player.waveTime > 0) {
+          context.strokeStyle = '#ffffff';
+          context.lineWidth = 3;
+          context.beginPath();
+          context.arc(18, -10, 10 + Math.sin(time * 12) * 1, -0.6, 0.8);
+          context.stroke();
+        }
+        context.restore();
+      }
+
+      function updatePetals(delta) {
+        for (let index = petals.length - 1; index >= 0; index -= 1) {
+          const petal = petals[index];
+          petal.x += petal.vx * delta;
+          petal.y += petal.vy * delta;
+          petal.vy += 12 * delta;
+          petal.life -= delta;
+          if (petal.life <= 0) {
+            petals.splice(index, 1);
+          }
+        }
+        for (let index = sparkles.length - 1; index >= 0; index -= 1) {
+          const sparkle = sparkles[index];
+          sparkle.radius += delta * 28;
+          sparkle.life -= delta;
+          if (sparkle.life <= 0) {
+            sparkles.splice(index, 1);
+          }
+        }
+      }
+
+      function drawEffects() {
+        for (const petal of petals) {
+          context.save();
+          context.globalAlpha = petal.life / petal.maxLife;
+          context.fillStyle = petal.color;
+          context.beginPath();
+          context.ellipse(petal.x, petal.y, petal.size, petal.size * 0.7, 0.6, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
+        for (const sparkle of sparkles) {
+          context.save();
+          context.globalAlpha = sparkle.life / sparkle.maxLife;
+          context.strokeStyle = sparkle.color;
+          context.lineWidth = 3;
+          context.beginPath();
+          context.arc(sparkle.x, sparkle.y, sparkle.radius, 0, Math.PI * 2);
+          context.stroke();
+          context.restore();
+        }
+      }
+
+      function updatePlayer(delta) {
+        if (player.isSitting) {
+          if (keys.size > 0) {
+            player.isSitting = false;
+          } else {
+            return;
+          }
+        }
+        const run = keys.has('shift') ? 1.45 : 1;
+        const inputX = (keys.has('arrowright') || keys.has('d') ? 1 : 0) - (keys.has('arrowleft') || keys.has('a') ? 1 : 0);
+        const inputY = (keys.has('arrowdown') || keys.has('s') ? 1 : 0) - (keys.has('arrowup') || keys.has('w') ? 1 : 0);
+        if (inputX || inputY) {
+          const length = Math.hypot(inputX, inputY) || 1;
+          player.x += (inputX / length) * player.speed * run * delta;
+          player.y += (inputY / length) * player.speed * run * delta;
+          if (inputX !== 0) {
+            player.facing = inputX > 0 ? 1 : -1;
+          }
+        }
+        player.x = clamp(player.x, 30, width - 30);
+        player.y = clamp(player.y, 70, height - 30);
+        player.waveTime = Math.max(0, player.waveTime - delta);
+      }
+
+      function loop(timestamp) {
+        const delta = Math.min((timestamp - lastTime) / 1000 || 0.016, 0.033);
+        lastTime = timestamp;
+        const time = timestamp / 1000;
+
+        context.clearRect(0, 0, width, height);
+        drawBackground(time);
+        drawTown(time);
+
+        if (state.running && !state.paused) {
+          updatePlayer(delta);
+          updatePetals(delta);
+          updateUi();
+        } else {
+          updatePetals(delta);
+        }
+
+        for (const npc of npcs) {
+          drawNpc(npc, time);
+        }
+        drawPlayer(time);
+        drawEffects();
+
+        const { npc, dist } = getNearbyNpc();
+        if (state.running && npc && dist < 90) {
+          context.save();
+          context.fillStyle = 'rgba(255,255,255,0.9)';
+          context.font = '700 16px Nunito, sans-serif';
+          context.textAlign = 'center';
+          context.fillText('E ではなす', npc.x, npc.y - 52);
+          context.restore();
+        }
+
+        if (state.paused) {
+          context.save();
+          context.fillStyle = 'rgba(255,248,220,0.4)';
+          context.fillRect(0, 0, width, height);
+          context.fillStyle = '#4a2f1b';
+          context.font = '700 42px Nunito, sans-serif';
+          context.textAlign = 'center';
+          context.fillText('PAUSED', width / 2, height / 2);
+          context.restore();
+        }
+
+        requestAnimationFrame(loop);
+      }
+
+      function togglePause() {
+        if (!state.running) {
+          return;
+        }
+        state.paused = !state.paused;
+        showToast(state.paused ? 'ちょっと休憩' : 'さんぽ再開');
+      }
+
+      window.addEventListener('resize', resize);
+      window.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(key)) {
+          keys.add(key);
+        }
+        if (key === 'e') {
+          interact();
+        }
+      });
+      window.addEventListener('keyup', (event) => {
+        keys.delete(event.key.toLowerCase());
+      });
+
+      startButton.addEventListener('click', resetGame);
+      overlayStartButton.addEventListener('click', resetGame);
+      pauseButton.addEventListener('click', togglePause);
+      waveButton.addEventListener('click', wave);
+      sitButton.addEventListener('click', sitDown);
+
+      resize();
+      renderQuestList();
+      renderStampList();
+      updateUi();
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>

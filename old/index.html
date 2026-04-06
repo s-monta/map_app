@@ -1,0 +1,1771 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crimson Arcana</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0607;
+        --bg-soft: #140a0d;
+        --panel: rgba(20, 11, 13, 0.9);
+        --panel-soft: rgba(35, 18, 23, 0.78);
+        --panel-strong: rgba(44, 20, 28, 0.96);
+        --border: rgba(194, 158, 90, 0.18);
+        --text: #f5ead8;
+        --muted: #b59f84;
+        --gold: #d2aa5f;
+        --gold-soft: #8e6d33;
+        --crimson: #8f2034;
+        --crimson-bright: #c13c56;
+        --emerald: #2e8b71;
+        --azure: #4068a8;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+        --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background:
+          radial-gradient(circle at top, rgba(193, 60, 86, 0.14), transparent 28%),
+          radial-gradient(circle at bottom right, rgba(210, 170, 95, 0.08), transparent 26%),
+          linear-gradient(180deg, #070304, #13090b 42%, #080405);
+        color: var(--text);
+        font-family: Inter, "Hiragino Sans", "Noto Sans JP", sans-serif;
+        overflow: hidden;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      body::before {
+        background:
+          radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.05), transparent 16%),
+          radial-gradient(circle at 80% 12%, rgba(255, 255, 255, 0.04), transparent 12%),
+          radial-gradient(circle at 72% 78%, rgba(210, 170, 95, 0.05), transparent 16%);
+        mix-blend-mode: screen;
+      }
+
+      body::after {
+        background: radial-gradient(circle, transparent 56%, rgba(0, 0, 0, 0.45) 100%);
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .game {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 18px;
+        padding: 18px;
+      }
+
+      .panel {
+        position: relative;
+        background:
+          linear-gradient(180deg, rgba(39, 19, 24, 0.98), rgba(18, 10, 12, 0.96)),
+          linear-gradient(135deg, rgba(210, 170, 95, 0.06), transparent 50%);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        border-radius: 26px;
+        overflow: hidden;
+      }
+
+      .panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 22%),
+          linear-gradient(180deg, rgba(210, 170, 95, 0.06), transparent 30%);
+        pointer-events: none;
+      }
+
+      .top-shell {
+        display: grid;
+        grid-template-columns: minmax(320px, 1fr) minmax(260px, 0.72fr);
+        gap: 18px;
+      }
+
+      .enemy-panel {
+        padding: 18px 20px 20px;
+      }
+
+      .summary-panel {
+        padding: 18px;
+      }
+
+      .header-row,
+      .sub-row,
+      .resource-row,
+      .footer-row,
+      .reward-grid,
+      .hand {
+        display: flex;
+        gap: 12px;
+      }
+
+      .header-row,
+      .sub-row,
+      .footer-row {
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 12px;
+        color: var(--gold);
+        background: rgba(210, 170, 95, 0.08);
+        border: 1px solid rgba(210, 170, 95, 0.16);
+      }
+
+      .small,
+      .muted,
+      .hint,
+      .card-type,
+      .log-sub {
+        color: var(--muted);
+      }
+
+      .title {
+        margin: 10px 0 0;
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1;
+        letter-spacing: -0.05em;
+      }
+
+      .enemy-name {
+        margin: 4px 0 0;
+        font-size: clamp(26px, 3.8vw, 38px);
+        line-height: 1;
+        letter-spacing: -0.05em;
+      }
+
+      .enemy-title {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .floor-chip {
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        min-width: 112px;
+        text-align: center;
+      }
+
+      .floor-label {
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .floor-value {
+        margin-top: 6px;
+        font-size: 24px;
+        font-weight: 800;
+      }
+
+      .enemy-stage {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1.1fr);
+        gap: 18px;
+        align-items: center;
+      }
+
+      .enemy-portrait-wrap {
+        min-height: 190px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+      }
+
+      .enemy-portrait {
+        width: 170px;
+        height: 170px;
+        position: relative;
+        filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.4));
+        transition: transform 220ms ease, filter 220ms ease;
+      }
+
+      .enemy-portrait.is-hurt {
+        animation: enemyShake 360ms ease;
+      }
+
+      .enemy-portrait::before,
+      .enemy-portrait::after,
+      .enemy-core,
+      .enemy-eye,
+      .enemy-horn,
+      .enemy-aura {
+        position: absolute;
+        display: block;
+      }
+
+      .enemy-aura {
+        inset: 12px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(193, 60, 86, 0.22), transparent 65%);
+        animation: pulseAura 3.2s ease-in-out infinite;
+      }
+
+      .enemy-core {
+        inset: 36px;
+        border-radius: 44% 56% 54% 46% / 48% 42% 58% 52%;
+        background:
+          radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.16), transparent 18%),
+          linear-gradient(180deg, #7f102a, #3a0f18 70%, #18070d);
+        border: 1px solid rgba(210, 170, 95, 0.12);
+        box-shadow:
+          inset 0 12px 30px rgba(255, 255, 255, 0.06),
+          inset 0 -18px 30px rgba(0, 0, 0, 0.28),
+          0 0 40px rgba(193, 60, 86, 0.14);
+      }
+
+      .enemy-horn {
+        top: 18px;
+        width: 44px;
+        height: 60px;
+        background: linear-gradient(180deg, #d2aa5f, #6b431c);
+        clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
+      }
+
+      .enemy-horn.left {
+        left: 28px;
+        transform: rotate(-20deg);
+      }
+
+      .enemy-horn.right {
+        right: 28px;
+        transform: rotate(20deg);
+      }
+
+      .enemy-eye {
+        top: 72px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #f7d484 0%, #f59e0b 55%, #7c2d12 100%);
+        box-shadow: 0 0 18px rgba(245, 158, 11, 0.6);
+        animation: eyeBlink 4.5s infinite;
+      }
+
+      .enemy-eye.left {
+        left: 58px;
+      }
+
+      .enemy-eye.right {
+        right: 58px;
+      }
+
+      .enemy-mouth {
+        position: absolute;
+        left: 50%;
+        bottom: 44px;
+        width: 64px;
+        height: 28px;
+        transform: translateX(-50%);
+        border-bottom: 4px solid rgba(245, 234, 216, 0.52);
+        border-radius: 0 0 60px 60px;
+      }
+
+      .enemy-info {
+        display: grid;
+        gap: 14px;
+      }
+
+      .resource-row {
+        flex-wrap: wrap;
+      }
+
+      .bar-card,
+      .intent-card,
+      .metric-card,
+      .log-card,
+      .player-stat,
+      .discard-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 18px;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .bar-card {
+        padding: 14px;
+      }
+
+      .bar-label-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        font-size: 13px;
+      }
+
+      .hp-bar,
+      .mana-bar,
+      .progress-bar {
+        margin-top: 10px;
+        height: 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 50%;
+        border-radius: inherit;
+        transition: width 280ms ease;
+      }
+
+      .fill.enemy-hp {
+        background: linear-gradient(90deg, #9b2037, #cf5368 68%, #f1bc88);
+      }
+
+      .fill.player-hp {
+        background: linear-gradient(90deg, #2a7a62, #43b58d 68%, #b5efcd);
+      }
+
+      .fill.player-mana {
+        background: linear-gradient(90deg, #3b4f9a, #5d81ea 68%, #c7d7ff);
+      }
+
+      .intent-card {
+        padding: 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .intent-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        font-size: 28px;
+        background: linear-gradient(180deg, rgba(193, 60, 86, 0.24), rgba(58, 15, 24, 0.8));
+        border: 1px solid rgba(210, 170, 95, 0.14);
+        box-shadow: inset 0 8px 16px rgba(255, 255, 255, 0.04);
+      }
+
+      .intent-name {
+        font-weight: 700;
+        font-size: 18px;
+      }
+
+      .summary-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric-card {
+        padding: 14px;
+      }
+
+      .metric-label {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .metric-value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 800;
+      }
+
+      .middle-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+        gap: 18px;
+        min-height: 0;
+      }
+
+      .log-panel {
+        padding: 18px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 0;
+      }
+
+      .log-stack {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+        min-height: 0;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .log-card {
+        padding: 14px 16px;
+        line-height: 1.65;
+        animation: fadeUp 260ms ease;
+      }
+
+      .log-emphasis {
+        color: #f3d28a;
+      }
+
+      .deck-panel {
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+
+      .deck-list {
+        display: grid;
+        gap: 8px;
+        max-height: 320px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .deck-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .bottom-shell {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.76fr) minmax(0, 1.24fr);
+        gap: 18px;
+        align-items: end;
+      }
+
+      .player-panel,
+      .hand-panel {
+        padding: 18px;
+      }
+
+      .player-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .player-stat {
+        padding: 12px 14px;
+      }
+
+      .player-label {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .player-value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 800;
+      }
+
+      .footer-row {
+        margin-top: 14px;
+      }
+
+      .end-turn {
+        appearance: none;
+        border: 1px solid rgba(210, 170, 95, 0.22);
+        background:
+          linear-gradient(180deg, rgba(210, 170, 95, 0.18), rgba(125, 74, 31, 0.42)),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 30%);
+        color: var(--text);
+        border-radius: 16px;
+        padding: 12px 18px;
+        cursor: pointer;
+        box-shadow: var(--shadow-soft);
+        transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+      }
+
+      .end-turn:hover:not(:disabled),
+      .reward-card:hover,
+      .play-card:hover:not(.is-disabled) {
+        transform: translateY(-2px);
+      }
+
+      .end-turn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .hand-panel {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hand {
+        align-items: stretch;
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+
+      .play-card,
+      .reward-card {
+        min-width: 170px;
+        position: relative;
+        border-radius: 22px;
+        border: 1px solid rgba(210, 170, 95, 0.16);
+        background:
+          linear-gradient(180deg, rgba(61, 26, 33, 0.98), rgba(20, 10, 13, 0.98)),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent 24%);
+        box-shadow:
+          0 18px 30px rgba(0, 0, 0, 0.28),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05),
+          inset 0 -10px 20px rgba(0, 0, 0, 0.18);
+        padding: 16px 16px 18px;
+        cursor: pointer;
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          border-color 180ms ease,
+          opacity 180ms ease;
+      }
+
+      .play-card::before,
+      .reward-card::before {
+        content: "";
+        position: absolute;
+        inset: 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(210, 170, 95, 0.08);
+        pointer-events: none;
+      }
+
+      .play-card.is-disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        filter: grayscale(0.25);
+      }
+
+      .play-card.is-used {
+        animation: cardUse 360ms ease forwards;
+      }
+
+      .card-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .card-name {
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .cost-badge {
+        min-width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 18px;
+        background: linear-gradient(180deg, rgba(64, 104, 168, 0.95), rgba(30, 50, 84, 0.95));
+        border: 1px solid rgba(201, 215, 255, 0.16);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+      }
+
+      .card-body {
+        margin-top: 18px;
+        font-size: 14px;
+        line-height: 1.7;
+        color: #eadbc4;
+        min-height: 98px;
+      }
+
+      .card-footer {
+        margin-top: 16px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .card-tag {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: rgba(210, 170, 95, 0.08);
+        border: 1px solid rgba(210, 170, 95, 0.12);
+      }
+
+      .card-accent-attack {
+        box-shadow: inset 0 0 0 1px rgba(193, 60, 86, 0.18), 0 18px 30px rgba(0, 0, 0, 0.28);
+      }
+
+      .card-accent-skill {
+        box-shadow: inset 0 0 0 1px rgba(210, 170, 95, 0.12), 0 18px 30px rgba(0, 0, 0, 0.28);
+      }
+
+      .card-accent-power {
+        box-shadow: inset 0 0 0 1px rgba(64, 104, 168, 0.18), 0 18px 30px rgba(0, 0, 0, 0.28);
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 8;
+        background: rgba(7, 3, 4, 0.72);
+        backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .overlay.is-visible {
+        display: flex;
+      }
+
+      .overlay-card {
+        width: min(980px, 100%);
+        max-height: calc(100vh - 40px);
+        overflow: auto;
+        border-radius: 30px;
+        padding: 24px;
+        background:
+          linear-gradient(180deg, rgba(39, 19, 24, 0.98), rgba(18, 10, 12, 0.98)),
+          linear-gradient(135deg, rgba(210, 170, 95, 0.08), transparent 40%);
+        border: 1px solid rgba(210, 170, 95, 0.16);
+        box-shadow: var(--shadow);
+      }
+
+      .overlay-title {
+        font-size: clamp(32px, 5vw, 52px);
+        line-height: 1;
+        letter-spacing: -0.05em;
+        margin: 10px 0 0;
+      }
+
+      .overlay-copy {
+        margin-top: 12px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .reward-grid {
+        margin-top: 24px;
+        flex-wrap: wrap;
+      }
+
+      .reward-card {
+        flex: 1 1 220px;
+      }
+
+      .restart-button {
+        margin-top: 18px;
+        appearance: none;
+        border: 1px solid rgba(210, 170, 95, 0.2);
+        background: linear-gradient(180deg, rgba(193, 60, 86, 0.28), rgba(78, 18, 30, 0.92));
+        color: var(--text);
+        border-radius: 16px;
+        padding: 14px 18px;
+        cursor: pointer;
+      }
+
+      .flash {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 7;
+        opacity: 0;
+      }
+
+      .flash.is-active {
+        animation: screenFlash 320ms ease;
+      }
+
+      .flash.enemy {
+        background: radial-gradient(circle, rgba(193, 60, 86, 0.18), transparent 65%);
+      }
+
+      .flash.player {
+        background: radial-gradient(circle, rgba(64, 104, 168, 0.22), transparent 65%);
+      }
+
+      @keyframes enemyShake {
+        0%,
+        100% { transform: translateX(0); }
+        20% { transform: translateX(-8px); }
+        40% { transform: translateX(8px); }
+        60% { transform: translateX(-6px); }
+        80% { transform: translateX(6px); }
+      }
+
+      @keyframes cardUse {
+        0% { transform: translateY(0) scale(1); opacity: 1; }
+        45% { transform: translateY(-18px) scale(1.04); opacity: 1; }
+        100% { transform: translateY(-26px) scale(0.96); opacity: 0; }
+      }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes pulseAura {
+        0%, 100% { transform: scale(0.96); opacity: 0.7; }
+        50% { transform: scale(1.06); opacity: 1; }
+      }
+
+      @keyframes eyeBlink {
+        0%, 46%, 50%, 100% { transform: scaleY(1); }
+        48% { transform: scaleY(0.12); }
+      }
+
+      @keyframes screenFlash {
+        0% { opacity: 0; }
+        35% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      @media (max-width: 980px) {
+        .top-shell,
+        .middle-shell,
+        .bottom-shell,
+        .enemy-stage {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-grid,
+        .player-grid,
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        html,
+        body {
+          overflow: auto;
+        }
+
+        .game {
+          min-height: auto;
+        }
+
+        .summary-grid,
+        .player-grid,
+        .stats {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .hand {
+          padding-bottom: 10px;
+        }
+
+        .play-card,
+        .reward-card {
+          min-width: 220px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="game">
+      <section class="top-shell">
+        <div class="panel enemy-panel">
+          <div class="header-row">
+            <div>
+              <div class="badge">Crimson Arcana</div>
+              <h1 class="enemy-name" id="enemyName">灰燼の侍祭</h1>
+              <div class="enemy-title" id="enemyLore">崩れた祭壇を守る、血の契約者。</div>
+            </div>
+            <div class="floor-chip">
+              <div class="floor-label">Floor</div>
+              <div class="floor-value" id="floorValue">1</div>
+            </div>
+          </div>
+
+          <div class="enemy-stage">
+            <div class="enemy-portrait-wrap">
+              <div class="enemy-portrait" id="enemyPortrait">
+                <span class="enemy-aura"></span>
+                <span class="enemy-horn left"></span>
+                <span class="enemy-horn right"></span>
+                <span class="enemy-core"></span>
+                <span class="enemy-eye left"></span>
+                <span class="enemy-eye right"></span>
+                <span class="enemy-mouth"></span>
+              </div>
+            </div>
+
+            <div class="enemy-info">
+              <div class="bar-card">
+                <div class="bar-label-row">
+                  <span>Enemy HP</span>
+                  <strong id="enemyHpLabel">42 / 42</strong>
+                </div>
+                <div class="hp-bar">
+                  <div class="fill enemy-hp" id="enemyHpFill"></div>
+                </div>
+              </div>
+
+              <div class="resource-row">
+                <div class="metric-card" style="flex:1 1 120px">
+                  <div class="metric-label">Block</div>
+                  <div class="metric-value" id="enemyBlockValue">0</div>
+                </div>
+                <div class="metric-card" style="flex:1 1 120px">
+                  <div class="metric-label">Pattern</div>
+                  <div class="metric-value" id="enemyPatternValue">Aggressive</div>
+                </div>
+              </div>
+
+              <div class="intent-card">
+                <div class="sub-row">
+                  <div>
+                    <div class="small">次の行動</div>
+                    <div class="intent-name" id="intentName">切り裂き</div>
+                  </div>
+                  <div class="intent-icon" id="intentIcon">⚔</div>
+                </div>
+                <div class="small" id="intentDesc">8 ダメージを与える。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="panel summary-panel">
+          <div class="badge">Run Summary</div>
+          <h2 class="title">深紅の回廊</h2>
+          <p class="muted" style="margin-top:10px; line-height:1.7">
+            1ターンごとに手札を引き直し、マナをどう配分するかで流れが変わる無限ダンジョン。報酬カードを重ねて、自分だけの呪装デッキを育ててください。
+          </p>
+          <div class="summary-grid">
+            <div class="metric-card">
+              <div class="metric-label">Victory</div>
+              <div class="metric-value" id="winValue">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Deck Size</div>
+              <div class="metric-value" id="deckSizeValue">10</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Draw</div>
+              <div class="metric-value" id="drawValue">5</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Turn</div>
+              <div class="metric-value" id="turnValue">1</div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="middle-shell">
+        <section class="panel log-panel">
+          <div class="header-row">
+            <div>
+              <div class="badge">Battle Chronicle</div>
+              <h2 class="title" style="font-size:28px">戦闘ログ</h2>
+            </div>
+            <div class="log-sub" id="statusLine">手札を選び、ターンを編み直せ。</div>
+          </div>
+          <div class="log-stack" id="logStack"></div>
+        </section>
+
+        <aside class="panel deck-panel">
+          <div class="header-row">
+            <div>
+              <div class="badge">Deck</div>
+              <h2 class="title" style="font-size:28px">所持カード</h2>
+            </div>
+            <div class="small" id="deckSummary">10 cards</div>
+          </div>
+          <div class="deck-list" id="deckList"></div>
+        </aside>
+      </section>
+
+      <section class="bottom-shell">
+        <section class="panel player-panel">
+          <div class="header-row">
+            <div>
+              <div class="badge">Invoker</div>
+              <h2 class="title" style="font-size:30px">黒冠の魔導士</h2>
+            </div>
+            <button class="end-turn" id="endTurnButton">End Turn</button>
+          </div>
+
+          <div class="bar-card" style="margin-top:14px">
+            <div class="bar-label-row">
+              <span>HP</span>
+              <strong id="playerHpLabel">72 / 72</strong>
+            </div>
+            <div class="hp-bar">
+              <div class="fill player-hp" id="playerHpFill"></div>
+            </div>
+          </div>
+
+          <div class="bar-card" style="margin-top:12px">
+            <div class="bar-label-row">
+              <span>Mana</span>
+              <strong id="playerManaLabel">3 / 3</strong>
+            </div>
+            <div class="mana-bar">
+              <div class="fill player-mana" id="playerManaFill"></div>
+            </div>
+          </div>
+
+          <div class="player-grid">
+            <div class="player-stat">
+              <div class="player-label">Block</div>
+              <div class="player-value" id="playerBlockValue">0</div>
+            </div>
+            <div class="player-stat">
+              <div class="player-label">Strength</div>
+              <div class="player-value" id="playerStrengthValue">0</div>
+            </div>
+            <div class="player-stat">
+              <div class="player-label">Regen</div>
+              <div class="player-value" id="playerRegenValue">0</div>
+            </div>
+            <div class="player-stat">
+              <div class="player-label">Bonus Draw</div>
+              <div class="player-value" id="playerDrawBonusValue">0</div>
+            </div>
+          </div>
+
+          <div class="footer-row">
+            <div class="hint">カードは使用時に捨て札へ送られます。毎ターン新しい手札を引きます。</div>
+            <div class="discard-card" style="padding:10px 14px">
+              <div class="small">Discard</div>
+              <div style="font-weight:800; font-size:22px" id="discardValue">0</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hand-panel">
+          <div class="header-row">
+            <div>
+              <div class="badge">Hand</div>
+              <h2 class="title" style="font-size:30px">手札</h2>
+            </div>
+            <div class="small" id="handHint">0 / 5 playable</div>
+          </div>
+          <div class="hand" id="hand"></div>
+        </section>
+      </section>
+    </main>
+
+    <div class="overlay" id="rewardOverlay">
+      <div class="overlay-card">
+        <div class="badge">Victory Reward</div>
+        <h2 class="overlay-title">新たな秘儀を選べ</h2>
+        <p class="overlay-copy" id="rewardCopy">勝利の代償として、3つの呪装から1枚だけをデッキへ刻む。</p>
+        <div class="reward-grid" id="rewardGrid"></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="gameOverOverlay">
+      <div class="overlay-card">
+        <div class="badge">Run End</div>
+        <h2 class="overlay-title">契約はここで途絶えた</h2>
+        <p class="overlay-copy" id="gameOverCopy">深層へ届く前に、魂火は尽きた。</p>
+        <button class="restart-button" id="restartButton">もう一度潜る</button>
+      </div>
+    </div>
+
+    <div class="flash enemy" id="enemyFlash"></div>
+    <div class="flash player" id="playerFlash"></div>
+
+    <script>
+      const CARD_LIBRARY = {
+        strike: {
+          id: 'strike',
+          name: '灰刃',
+          type: 'attack',
+          cost: 1,
+          rarity: 'common',
+          description: '敵に 6 ダメージを与える。',
+          play(game) {
+            dealDamageToEnemy(game, 6 + game.player.strength, '灰刃');
+          },
+        },
+        guard: {
+          id: 'guard',
+          name: '鉄祈',
+          type: 'skill',
+          cost: 1,
+          rarity: 'common',
+          description: '5 ブロックを得る。',
+          play(game) {
+            gainBlock(game.player, 5, '鉄祈');
+            logAction('鉄祈で 5 ブロックを得た。');
+          },
+        },
+        ember: {
+          id: 'ember',
+          name: '残火',
+          type: 'attack',
+          cost: 1,
+          rarity: 'common',
+          description: '4 ダメージを 2 回与える。',
+          play(game) {
+            dealDamageToEnemy(game, 4 + game.player.strength, '残火');
+            dealDamageToEnemy(game, 4 + game.player.strength, '残火');
+          },
+        },
+        mend: {
+          id: 'mend',
+          name: '紅癒',
+          type: 'skill',
+          cost: 2,
+          rarity: 'common',
+          description: 'HP を 8 回復する。',
+          play(game) {
+            const healed = healPlayer(8);
+            logAction(`紅癒で HP を ${healed} 回復した。`);
+          },
+        },
+        ward: {
+          id: 'ward',
+          name: '鏡盾',
+          type: 'skill',
+          cost: 2,
+          rarity: 'common',
+          description: '10 ブロックを得る。',
+          play(game) {
+            gainBlock(game.player, 10, '鏡盾');
+            logAction('鏡盾が張られ、10 ブロックを得た。');
+          },
+        },
+        drain: {
+          id: 'drain',
+          name: '血吸い',
+          type: 'attack',
+          cost: 2,
+          rarity: 'uncommon',
+          description: '7 ダメージを与え、その半分だけ回復する。',
+          play(game) {
+            const dealt = dealDamageToEnemy(game, 7 + game.player.strength, '血吸い');
+            const healed = healPlayer(Math.ceil(dealt / 2));
+            if (healed > 0) {
+              logAction(`血吸いで ${dealt} ダメージ、HP を ${healed} 回復した。`);
+            }
+          },
+        },
+        focus: {
+          id: 'focus',
+          name: '冥想',
+          type: 'power',
+          cost: 1,
+          rarity: 'uncommon',
+          description: 'この戦闘中、筋力を 1 得る。',
+          play(game) {
+            game.player.strength += 1;
+            logAction('冥想により筋力が 1 上昇した。');
+          },
+        },
+        barrier: {
+          id: 'barrier',
+          name: '黄金障壁',
+          type: 'skill',
+          cost: 2,
+          rarity: 'uncommon',
+          description: '8 ブロックを得て、1 マナを回復する。',
+          play(game) {
+            gainBlock(game.player, 8, '黄金障壁');
+            game.player.mana = Math.min(game.player.maxMana, game.player.mana + 1);
+            logAction('黄金障壁で 8 ブロックを獲得し、1 マナを取り戻した。');
+          },
+        },
+        volley: {
+          id: 'volley',
+          name: '夜鴉の雨',
+          type: 'attack',
+          cost: 2,
+          rarity: 'uncommon',
+          description: '敵に 11 ダメージを与える。ブロックがあるならさらに 4 ダメージ。',
+          play(game) {
+            let damage = 11 + game.player.strength;
+            if (game.player.block > 0) {
+              damage += 4;
+            }
+            dealDamageToEnemy(game, damage, '夜鴉の雨');
+          },
+        },
+        regen: {
+          id: 'regen',
+          name: '灰の祝詞',
+          type: 'power',
+          cost: 2,
+          rarity: 'uncommon',
+          description: 'この戦闘中、毎ターン開始時に 2 回復する。',
+          play(game) {
+            game.player.regen += 2;
+            logAction('灰の祝詞が刻まれ、毎ターン 2 回復するようになった。');
+          },
+        },
+        insight: {
+          id: 'insight',
+          name: '深見',
+          type: 'power',
+          cost: 1,
+          rarity: 'uncommon',
+          description: 'この戦闘中、毎ターンの手札枚数が 1 増える。',
+          play(game) {
+            game.player.drawBonus += 1;
+            logAction('深見により次のターンから手札が 1 枚増える。');
+          },
+        },
+        cleave: {
+          id: 'cleave',
+          name: '断罪',
+          type: 'attack',
+          cost: 3,
+          rarity: 'rare',
+          description: '敵に 17 ダメージを与える。',
+          play(game) {
+            dealDamageToEnemy(game, 17 + game.player.strength, '断罪');
+          },
+        },
+        bulwark: {
+          id: 'bulwark',
+          name: '王盾',
+          type: 'skill',
+          cost: 3,
+          rarity: 'rare',
+          description: '16 ブロックを得て、次の敵の攻撃を弱める。',
+          play(game) {
+            gainBlock(game.player, 16, '王盾');
+            game.enemy.weakened += 4;
+            logAction('王盾で 16 ブロックを得て、敵の次の攻撃を弱めた。');
+          },
+        },
+        ritual: {
+          id: 'ritual',
+          name: '血盟',
+          type: 'power',
+          cost: 2,
+          rarity: 'rare',
+          description: '3 HP を失い、最大マナを 1 増やす。',
+          play(game) {
+            const lost = takeDirectDamage(game.player, 3);
+            game.player.maxMana = Math.min(7, game.player.maxMana + 1);
+            game.player.mana = Math.min(game.player.maxMana, game.player.mana + 1);
+            logAction(`血盟の代償で ${lost} HP を失い、最大マナが 1 増えた。`);
+          },
+        },
+        execution: {
+          id: 'execution',
+          name: '終幕',
+          type: 'attack',
+          cost: 2,
+          rarity: 'rare',
+          description: '敵の HP が半分以下なら 20 ダメージ、そうでなければ 10 ダメージ。',
+          play(game) {
+            const threshold = game.enemy.hp <= game.enemy.maxHp / 2;
+            const damage = (threshold ? 20 : 10) + game.player.strength;
+            dealDamageToEnemy(game, damage, '終幕');
+          },
+        },
+      };
+
+      const STARTER_DECK = ['strike', 'strike', 'strike', 'guard', 'guard', 'guard', 'ember', 'mend', 'ward', 'focus'];
+      const REWARD_POOL = ['drain', 'barrier', 'volley', 'regen', 'insight', 'cleave', 'bulwark', 'ritual', 'execution'];
+      const ENEMY_ARCHETYPES = [
+        {
+          names: ['灰燼の侍祭', '深紅の司祭', '裂礼の執行者'],
+          lore: '崩れた祭壇を守る、血の契約者。',
+          hpBase: 42,
+          hpStep: 10,
+          attackBase: 8,
+          attackStep: 2,
+          pattern: 'Aggressive',
+          intents: [
+            { type: 'attack', name: '切り裂き', icon: '⚔', multiplier: 1, text: (value) => `${value} ダメージを与える。` },
+            { type: 'buffAttack', name: '血の誓詞', icon: '✦', multiplier: 0.8, text: (value) => `${Math.max(1, Math.floor(value * 0.65))} ダメージを与え、次の攻撃力を上げる。` },
+            { type: 'block', name: '祭壇の庇護', icon: '🛡', multiplier: 0.9, text: (value) => `${value} ブロックを得る。` },
+          ],
+        },
+        {
+          names: ['黄金喰らい', '葬堂の獣', '鈍重の王喰'],
+          lore: '鈍い呼気とともに歩く、墓所の重戦車。',
+          hpBase: 54,
+          hpStep: 12,
+          attackBase: 9,
+          attackStep: 3,
+          pattern: 'Juggernaut',
+          intents: [
+            { type: 'attack', name: '踏み砕き', icon: '☄', multiplier: 1.15, text: (value) => `${value} ダメージを与える。` },
+            { type: 'attackBlock', name: '鎧進', icon: '⛨', multiplier: 0.8, text: (value) => `${Math.max(1, Math.floor(value * 0.8))} ダメージと ${Math.max(4, Math.floor(value * 0.65))} ブロック。` },
+            { type: 'block', name: '甲殻展開', icon: '⬒', multiplier: 1.1, text: (value) => `${value} ブロックを得る。` },
+          ],
+        },
+        {
+          names: ['薄明の魔女', '黒冠の鏡', '終末の詠み手'],
+          lore: '呪文そのものが形を成した、静かな破滅。',
+          hpBase: 48,
+          hpStep: 11,
+          attackBase: 10,
+          attackStep: 2,
+          pattern: 'Hexcaster',
+          intents: [
+            { type: 'attack', name: '呪火', icon: '✹', multiplier: 1.05, text: (value) => `${value} ダメージを与える。` },
+            { type: 'manaBurn', name: '魔力焼き', icon: '☽', multiplier: 0.75, text: (value) => `${Math.max(1, Math.floor(value * 0.75))} ダメージ。次ターン最大マナ -1。` },
+            { type: 'buffSelf', name: '深紅の円環', icon: '◈', multiplier: 0.9, text: (value) => `${value} ブロックを得て攻撃力を強化。` },
+          ],
+        },
+      ];
+
+      const game = {
+        player: null,
+        enemy: null,
+        floor: 1,
+        wins: 0,
+        turn: 1,
+        deck: [],
+        hand: [],
+        discard: [],
+        rewardChoices: [],
+        mode: 'battle',
+        lockInput: false,
+        temporaryManaPenalty: 0,
+        logs: [],
+      };
+
+      const elements = {
+        enemyName: document.getElementById('enemyName'),
+        enemyLore: document.getElementById('enemyLore'),
+        floorValue: document.getElementById('floorValue'),
+        enemyHpLabel: document.getElementById('enemyHpLabel'),
+        enemyHpFill: document.getElementById('enemyHpFill'),
+        enemyBlockValue: document.getElementById('enemyBlockValue'),
+        enemyPatternValue: document.getElementById('enemyPatternValue'),
+        intentName: document.getElementById('intentName'),
+        intentIcon: document.getElementById('intentIcon'),
+        intentDesc: document.getElementById('intentDesc'),
+        winValue: document.getElementById('winValue'),
+        deckSizeValue: document.getElementById('deckSizeValue'),
+        drawValue: document.getElementById('drawValue'),
+        turnValue: document.getElementById('turnValue'),
+        logStack: document.getElementById('logStack'),
+        statusLine: document.getElementById('statusLine'),
+        deckList: document.getElementById('deckList'),
+        deckSummary: document.getElementById('deckSummary'),
+        playerHpLabel: document.getElementById('playerHpLabel'),
+        playerHpFill: document.getElementById('playerHpFill'),
+        playerManaLabel: document.getElementById('playerManaLabel'),
+        playerManaFill: document.getElementById('playerManaFill'),
+        playerBlockValue: document.getElementById('playerBlockValue'),
+        playerStrengthValue: document.getElementById('playerStrengthValue'),
+        playerRegenValue: document.getElementById('playerRegenValue'),
+        playerDrawBonusValue: document.getElementById('playerDrawBonusValue'),
+        discardValue: document.getElementById('discardValue'),
+        hand: document.getElementById('hand'),
+        handHint: document.getElementById('handHint'),
+        endTurnButton: document.getElementById('endTurnButton'),
+        rewardOverlay: document.getElementById('rewardOverlay'),
+        rewardGrid: document.getElementById('rewardGrid'),
+        rewardCopy: document.getElementById('rewardCopy'),
+        gameOverOverlay: document.getElementById('gameOverOverlay'),
+        gameOverCopy: document.getElementById('gameOverCopy'),
+        restartButton: document.getElementById('restartButton'),
+        enemyFlash: document.getElementById('enemyFlash'),
+        playerFlash: document.getElementById('playerFlash'),
+        enemyPortrait: document.getElementById('enemyPortrait'),
+      };
+
+      function sample(array) {
+        return array[Math.floor(Math.random() * array.length)];
+      }
+
+      function shuffle(array) {
+        const clone = [...array];
+        for (let index = clone.length - 1; index > 0; index -= 1) {
+          const swap = Math.floor(Math.random() * (index + 1));
+          [clone[index], clone[swap]] = [clone[swap], clone[index]];
+        }
+        return clone;
+      }
+
+      function rarityLabel(card) {
+        return card.rarity === 'rare' ? 'Rare' : card.rarity === 'uncommon' ? 'Uncommon' : 'Common';
+      }
+
+      function typeLabel(card) {
+        return card.type === 'attack' ? 'Attack' : card.type === 'power' ? 'Power' : 'Skill';
+      }
+
+      function cardAccent(card) {
+        return card.type === 'attack' ? 'card-accent-attack' : card.type === 'power' ? 'card-accent-power' : 'card-accent-skill';
+      }
+
+      function drawCount() {
+        return 5 + game.player.drawBonus;
+      }
+
+      function addLog(message, emphasis = false) {
+        game.logs.unshift({ message, emphasis, id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}` });
+        game.logs = game.logs.slice(0, 8);
+        renderLogs();
+      }
+
+      function logAction(message) {
+        addLog(message, true);
+      }
+
+      function flashElement(element) {
+        element.classList.remove('is-active');
+        void element.offsetWidth;
+        element.classList.add('is-active');
+      }
+
+      function animateEnemyHit() {
+        elements.enemyPortrait.classList.remove('is-hurt');
+        void elements.enemyPortrait.offsetWidth;
+        elements.enemyPortrait.classList.add('is-hurt');
+        flashElement(elements.enemyFlash);
+      }
+
+      function animatePlayerHit() {
+        flashElement(elements.playerFlash);
+      }
+
+      function gainBlock(target, amount) {
+        target.block += amount;
+      }
+
+      function healPlayer(amount) {
+        const before = game.player.hp;
+        game.player.hp = Math.min(game.player.maxHp, game.player.hp + amount);
+        return game.player.hp - before;
+      }
+
+      function takeDirectDamage(target, amount) {
+        const actual = Math.min(target.hp, amount);
+        target.hp -= actual;
+        return actual;
+      }
+
+      function applyDamage(target, amount) {
+        const blocked = Math.min(target.block, amount);
+        target.block -= blocked;
+        const actual = Math.max(0, amount - blocked);
+        target.hp = Math.max(0, target.hp - actual);
+        return { blocked, actual };
+      }
+
+      function dealDamageToEnemy(currentGame, amount, source) {
+        const result = applyDamage(currentGame.enemy, amount);
+        animateEnemyHit();
+        logAction(`${source} が ${result.actual} ダメージを与えた${result.blocked > 0 ? `（${result.blocked} は防がれた）` : ''}。`);
+        return result.actual;
+      }
+
+      function dealDamageToPlayer(amount, source) {
+        const result = applyDamage(game.player, amount);
+        animatePlayerHit();
+        addLog(`${source} により ${result.actual} ダメージを受けた${result.blocked > 0 ? `（${result.blocked} は防いだ）` : ''}。`, true);
+        return result.actual;
+      }
+
+      function buildIntent(enemy, turnSeed) {
+        const template = enemy.templates[(turnSeed + game.floor + enemy.intentOffset) % enemy.templates.length];
+        const scaled = Math.max(4, Math.floor((enemy.attackBase + turnSeed * 1.2) * template.multiplier));
+        return {
+          ...template,
+          value: scaled,
+          description: template.text(scaled),
+        };
+      }
+
+      function createEnemy(floor) {
+        const archetype = ENEMY_ARCHETYPES[(floor - 1) % ENEMY_ARCHETYPES.length];
+        const enemy = {
+          name: archetype.names[Math.floor((floor - 1) / ENEMY_ARCHETYPES.length) % archetype.names.length],
+          lore: archetype.lore,
+          hp: archetype.hpBase + (floor - 1) * archetype.hpStep,
+          maxHp: archetype.hpBase + (floor - 1) * archetype.hpStep,
+          block: 0,
+          templates: archetype.intents,
+          pattern: archetype.pattern,
+          attackBase: archetype.attackBase + (floor - 1) * archetype.attackStep,
+          intentOffset: Math.floor(Math.random() * archetype.intents.length),
+          attackBuff: 0,
+          weakened: 0,
+          turnCounter: 0,
+        };
+        enemy.intent = buildIntent(enemy, enemy.turnCounter);
+        return enemy;
+      }
+
+      function createPlayer() {
+        return {
+          hp: 72,
+          maxHp: 72,
+          mana: 3,
+          maxMana: 3,
+          block: 0,
+          strength: 0,
+          regen: 0,
+          drawBonus: 0,
+        };
+      }
+
+      function drawNewHand() {
+        const count = Math.min(drawCount(), game.deck.length);
+        const pool = shuffle(game.deck);
+        game.hand = pool.slice(0, count);
+        renderHand();
+      }
+
+      function startBattle() {
+        game.mode = 'battle';
+        game.lockInput = false;
+        game.turn = 1;
+        game.discard = [];
+        game.hand = [];
+        game.enemy = createEnemy(game.floor);
+        game.player.block = 0;
+        game.player.mana = Math.max(1, game.player.maxMana - game.temporaryManaPenalty);
+        game.temporaryManaPenalty = 0;
+        game.player.strength = 0;
+        game.player.regen = 0;
+        game.player.drawBonus = 0;
+        game.logs = [];
+        elements.rewardOverlay.classList.remove('is-visible');
+        elements.gameOverOverlay.classList.remove('is-visible');
+        addLog(`${game.enemy.name} が現れた。`, true);
+        addLog('新たな手札を引き、呪文の配列を組み直せ。');
+        drawNewHand();
+        render();
+      }
+
+      function startRun() {
+        game.player = createPlayer();
+        game.floor = 1;
+        game.wins = 0;
+        game.deck = [...STARTER_DECK];
+        game.rewardChoices = [];
+        game.temporaryManaPenalty = 0;
+        startBattle();
+      }
+
+      function renderLogs() {
+        elements.logStack.innerHTML = '';
+        for (const log of game.logs) {
+          const node = document.createElement('div');
+          node.className = 'log-card';
+          node.innerHTML = log.emphasis ? `<span class="log-emphasis">${log.message}</span>` : log.message;
+          elements.logStack.appendChild(node);
+        }
+      }
+
+      function renderDeck() {
+        const counts = new Map();
+        for (const id of game.deck) {
+          counts.set(id, (counts.get(id) || 0) + 1);
+        }
+        const entries = [...counts.entries()].sort((left, right) => {
+          const cardA = CARD_LIBRARY[left[0]];
+          const cardB = CARD_LIBRARY[right[0]];
+          return cardA.cost - cardB.cost || cardA.name.localeCompare(cardB.name, 'ja');
+        });
+        elements.deckList.innerHTML = '';
+        for (const [id, count] of entries) {
+          const card = CARD_LIBRARY[id];
+          const row = document.createElement('div');
+          row.className = 'deck-row';
+          row.innerHTML = `
+            <div>
+              <strong>${card.name}</strong>
+              <div class="small">${typeLabel(card)} / Cost ${card.cost}</div>
+            </div>
+            <div>×${count}</div>
+          `;
+          elements.deckList.appendChild(row);
+        }
+        elements.deckSummary.textContent = `${game.deck.length} cards`;
+      }
+
+      function createCardElement(cardId, index, isReward = false) {
+        const card = CARD_LIBRARY[cardId];
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `${isReward ? 'reward-card' : 'play-card'} ${cardAccent(card)}`;
+        if (!isReward && (card.cost > game.player.mana || game.lockInput || game.mode !== 'battle')) {
+          button.classList.add('is-disabled');
+        }
+        button.innerHTML = `
+          <div class="card-top">
+            <div>
+              <div class="card-type">${rarityLabel(card)}</div>
+              <div class="card-name">${card.name}</div>
+            </div>
+            <div class="cost-badge">${card.cost}</div>
+          </div>
+          <div class="card-body">${card.description}</div>
+          <div class="card-footer">
+            <div class="card-tag">${typeLabel(card)}</div>
+            <div class="small">${isReward ? 'Add to deck' : 'Play'}</div>
+          </div>
+        `;
+        if (isReward) {
+          button.addEventListener('click', () => chooseReward(index));
+        } else {
+          button.addEventListener('click', () => playCard(index, button));
+        }
+        return button;
+      }
+
+      function renderHand() {
+        elements.hand.innerHTML = '';
+        let playableCount = 0;
+        game.hand.forEach((cardId, index) => {
+          const card = CARD_LIBRARY[cardId];
+          if (card.cost <= game.player.mana && !game.lockInput && game.mode === 'battle') {
+            playableCount += 1;
+          }
+          elements.hand.appendChild(createCardElement(cardId, index));
+        });
+        elements.handHint.textContent = `${playableCount} / ${game.hand.length} playable`;
+      }
+
+      function renderRewardChoices() {
+        elements.rewardGrid.innerHTML = '';
+        game.rewardChoices.forEach((cardId, index) => {
+          elements.rewardGrid.appendChild(createCardElement(cardId, index, true));
+        });
+      }
+
+      function render() {
+        const enemy = game.enemy;
+        const player = game.player;
+        elements.enemyName.textContent = enemy.name;
+        elements.enemyLore.textContent = enemy.lore;
+        elements.floorValue.textContent = String(game.floor);
+        elements.enemyHpLabel.textContent = `${enemy.hp} / ${enemy.maxHp}`;
+        elements.enemyHpFill.style.width = `${(enemy.hp / enemy.maxHp) * 100}%`;
+        elements.enemyBlockValue.textContent = String(enemy.block);
+        elements.enemyPatternValue.textContent = enemy.pattern;
+        elements.intentName.textContent = enemy.intent.name;
+        elements.intentIcon.textContent = enemy.intent.icon;
+        elements.intentDesc.textContent = enemy.intent.description;
+        elements.winValue.textContent = String(game.wins);
+        elements.deckSizeValue.textContent = String(game.deck.length);
+        elements.drawValue.textContent = String(drawCount());
+        elements.turnValue.textContent = String(game.turn);
+        elements.playerHpLabel.textContent = `${player.hp} / ${player.maxHp}`;
+        elements.playerHpFill.style.width = `${(player.hp / player.maxHp) * 100}%`;
+        elements.playerManaLabel.textContent = `${player.mana} / ${player.maxMana}`;
+        elements.playerManaFill.style.width = `${(player.mana / player.maxMana) * 100}%`;
+        elements.playerBlockValue.textContent = String(player.block);
+        elements.playerStrengthValue.textContent = String(player.strength);
+        elements.playerRegenValue.textContent = String(player.regen);
+        elements.playerDrawBonusValue.textContent = String(player.drawBonus);
+        elements.discardValue.textContent = String(game.discard.length);
+        elements.statusLine.textContent = game.mode === 'battle'
+          ? `ターン ${game.turn} · マナ ${player.mana}/${player.maxMana} · 次の一手で流れを作れ。`
+          : game.mode === 'reward'
+            ? '戦利品を選べ。強くなる代わりにデッキは重くなる。'
+            : '静寂が落ちた。新しい契約を結ぶか。';
+        elements.endTurnButton.disabled = game.lockInput || game.mode !== 'battle';
+        renderDeck();
+        renderHand();
+      }
+
+      function checkBattleEnd() {
+        if (game.enemy.hp <= 0) {
+          game.wins += 1;
+          game.mode = 'reward';
+          game.lockInput = true;
+          addLog(`${game.enemy.name} を打ち倒した。`, true);
+          addLog('深紅の扉が開き、新たな秘儀が現れる。');
+          game.rewardChoices = shuffle(REWARD_POOL).slice(0, 3);
+          elements.rewardCopy.textContent = `${game.enemy.name} を撃破。階層 ${game.floor} を踏破し、次の戦いに備えて 1 枚選べ。`;
+          renderRewardChoices();
+          elements.rewardOverlay.classList.add('is-visible');
+          render();
+          return true;
+        }
+        if (game.player.hp <= 0) {
+          game.mode = 'gameover';
+          game.lockInput = true;
+          elements.gameOverCopy.textContent = `到達階層: ${game.floor} / 連勝: ${game.wins}。最後の敵は ${game.enemy.name} だった。`;
+          elements.gameOverOverlay.classList.add('is-visible');
+          render();
+          return true;
+        }
+        return false;
+      }
+
+      function moveCardToDiscard(cardId) {
+        game.discard.push(cardId);
+      }
+
+      function playCard(index, element) {
+        if (game.lockInput || game.mode !== 'battle') {
+          return;
+        }
+        const cardId = game.hand[index];
+        const card = CARD_LIBRARY[cardId];
+        if (!card || card.cost > game.player.mana) {
+          return;
+        }
+
+        game.player.mana -= card.cost;
+        element.classList.add('is-used');
+        game.lockInput = true;
+        window.setTimeout(() => {
+          try {
+            card.play(game);
+          } finally {
+            moveCardToDiscard(cardId);
+            game.hand.splice(index, 1);
+            game.lockInput = false;
+            if (!checkBattleEnd()) {
+              render();
+            }
+          }
+        }, 220);
+      }
+
+      function enemyAct() {
+        const intent = game.enemy.intent;
+        if (intent.type === 'attack') {
+          const damage = Math.max(1, intent.value + game.enemy.attackBuff - game.enemy.weakened);
+          dealDamageToPlayer(damage, game.enemy.name);
+          game.enemy.attackBuff = 0;
+          game.enemy.weakened = 0;
+        } else if (intent.type === 'block') {
+          gainBlock(game.enemy, intent.value);
+          addLog(`${game.enemy.name} は ${intent.value} ブロックを得た。`, true);
+        } else if (intent.type === 'buffAttack') {
+          const damage = Math.max(1, Math.floor(intent.value * 0.65) + game.enemy.attackBuff - game.enemy.weakened);
+          dealDamageToPlayer(damage, `${game.enemy.name} の血の誓詞`);
+          game.enemy.attackBuff += 4;
+          game.enemy.weakened = 0;
+          addLog(`${game.enemy.name} の刃が赤く染まり、次の攻撃が強化された。`);
+        } else if (intent.type === 'attackBlock') {
+          const damage = Math.max(1, Math.floor(intent.value * 0.8) + game.enemy.attackBuff - game.enemy.weakened);
+          dealDamageToPlayer(damage, `${game.enemy.name} の鎧進`);
+          const block = Math.max(4, Math.floor(intent.value * 0.65));
+          gainBlock(game.enemy, block);
+          addLog(`${game.enemy.name} は ${block} ブロックを得た。`);
+          game.enemy.attackBuff = 0;
+          game.enemy.weakened = 0;
+        } else if (intent.type === 'manaBurn') {
+          const damage = Math.max(1, Math.floor(intent.value * 0.75) + game.enemy.attackBuff - game.enemy.weakened);
+          dealDamageToPlayer(damage, `${game.enemy.name} の魔力焼き`);
+          game.temporaryManaPenalty = 1;
+          game.enemy.attackBuff = 0;
+          game.enemy.weakened = 0;
+          addLog('次のターン、最大マナが 1 減少する。');
+        } else if (intent.type === 'buffSelf') {
+          gainBlock(game.enemy, intent.value);
+          game.enemy.attackBuff += 3;
+          addLog(`${game.enemy.name} は ${intent.value} ブロックを得て、力を蓄えた。`, true);
+        }
+      }
+
+      function startPlayerTurn() {
+        game.turn += 1;
+        game.player.block = 0;
+        game.enemy.block = 0;
+        const regen = game.player.regen > 0 ? healPlayer(game.player.regen) : 0;
+        game.player.mana = Math.max(1, game.player.maxMana - game.temporaryManaPenalty);
+        if (game.temporaryManaPenalty > 0) {
+          addLog('魔力焼きの残滓で、今ターンの最大マナが減少した。');
+          game.temporaryManaPenalty = 0;
+        }
+        if (regen > 0) {
+          addLog(`再生効果で HP を ${regen} 回復した。`);
+        }
+        game.enemy.turnCounter += 1;
+        game.enemy.intent = buildIntent(game.enemy, game.enemy.turnCounter);
+        drawNewHand();
+        render();
+      }
+
+      function endTurn() {
+        if (game.lockInput || game.mode !== 'battle') {
+          return;
+        }
+        game.lockInput = true;
+        game.hand.forEach((cardId) => moveCardToDiscard(cardId));
+        game.hand = [];
+        render();
+        addLog('ターン終了。敵の手番へ移る。');
+        window.setTimeout(() => {
+          enemyAct();
+          if (!checkBattleEnd()) {
+            window.setTimeout(() => {
+              game.lockInput = false;
+              startPlayerTurn();
+            }, 420);
+          }
+        }, 420);
+      }
+
+      function chooseReward(index) {
+        if (game.mode !== 'reward') {
+          return;
+        }
+        const cardId = game.rewardChoices[index];
+        const card = CARD_LIBRARY[cardId];
+        game.deck.push(cardId);
+        game.floor += 1;
+        game.rewardChoices = [];
+        elements.rewardOverlay.classList.remove('is-visible');
+        addLog(`${card.name} をデッキに刻み、さらに深層へ進む。`, true);
+        startBattle();
+      }
+
+      elements.endTurnButton.addEventListener('click', endTurn);
+      elements.restartButton.addEventListener('click', startRun);
+
+      startRun();
+    </script>
+  </body>
+</html>

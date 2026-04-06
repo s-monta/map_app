@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Drift</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #030712;
+        --panel: rgba(5, 10, 24, 0.76);
+        --panel-strong: rgba(10, 16, 32, 0.92);
+        --border: rgba(148, 163, 184, 0.18);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --cyan: #22d3ee;
+        --purple: #8b5cf6;
+        --pink: #fb7185;
+        --green: #22c55e;
+        --amber: #f59e0b;
+        --shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at top, rgba(34, 211, 238, 0.08), transparent 32%),
+          radial-gradient(circle at bottom right, rgba(139, 92, 246, 0.1), transparent 28%),
+          linear-gradient(180deg, #020617, #030712 48%, #02040c);
+        color: var(--text);
+        font-family: Inter, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      }
+
+      body {
+        position: relative;
+      }
+
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .overlay,
+      .overlay::before,
+      .overlay::after {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .overlay::before {
+        content: "";
+        background:
+          radial-gradient(circle at 20% 10%, rgba(34, 211, 238, 0.12), transparent 18%),
+          radial-gradient(circle at 80% 20%, rgba(251, 113, 133, 0.08), transparent 20%),
+          radial-gradient(circle at 70% 80%, rgba(139, 92, 246, 0.12), transparent 22%);
+        mix-blend-mode: screen;
+      }
+
+      .overlay::after {
+        content: "";
+        background: radial-gradient(circle, transparent 54%, rgba(0, 0, 0, 0.46) 100%);
+      }
+
+      .panel {
+        position: absolute;
+        z-index: 3;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+      }
+
+      .hud {
+        top: 18px;
+        left: 18px;
+        right: 18px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+        gap: 16px;
+        padding: 16px;
+        border-radius: 24px;
+      }
+
+      .intro {
+        bottom: 18px;
+        left: 18px;
+        width: min(420px, calc(100vw - 36px));
+        border-radius: 24px;
+        padding: 18px;
+      }
+
+      .status {
+        bottom: 18px;
+        right: 18px;
+        width: min(360px, calc(100vw - 36px));
+        border-radius: 24px;
+        padding: 18px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--cyan);
+        background: rgba(34, 211, 238, 0.12);
+        border: 1px solid rgba(34, 211, 238, 0.2);
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      .title {
+        margin-top: 12px;
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+      }
+
+      .copy,
+      .small,
+      .label {
+        color: var(--muted);
+      }
+
+      .copy {
+        margin-top: 10px;
+        line-height: 1.6;
+        font-size: 14px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat,
+      .tip {
+        padding: 12px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .value {
+        margin-top: 8px;
+        font-weight: 800;
+        font-size: 22px;
+      }
+
+      .value.is-danger {
+        color: #fb7185;
+      }
+
+      .value.is-good {
+        color: #22c55e;
+      }
+
+      .actions,
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 14px;
+        padding: 10px 14px;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(139, 92, 246, 0.16));
+        transition: transform 160ms ease, opacity 160ms ease, border-color 160ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button.secondary {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .tips {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .tip strong,
+      .legend-item strong {
+        color: var(--text);
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 13px;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .message-box {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 18px;
+        background: var(--panel-strong);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .message-title {
+        font-weight: 700;
+      }
+
+      .message-copy {
+        margin-top: 8px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .toast {
+        position: absolute;
+        top: 110px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-16px);
+        z-index: 5;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(10, 16, 32, 0.92);
+        border: 1px solid rgba(34, 211, 238, 0.18);
+        color: #cffafe;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 220ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .center-callout {
+        position: absolute;
+        inset: 50% auto auto 50%;
+        transform: translate(-50%, -50%);
+        z-index: 4;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .center-callout h2 {
+        font-size: clamp(38px, 7vw, 90px);
+        letter-spacing: -0.05em;
+        text-shadow: 0 0 24px rgba(34, 211, 238, 0.2);
+      }
+
+      .center-callout p {
+        margin-top: 8px;
+        color: rgba(226, 232, 240, 0.76);
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (max-width: 980px) {
+        .hud {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        html,
+        body {
+          overflow: auto;
+        }
+
+        canvas {
+          position: fixed;
+          inset: 0;
+        }
+
+        .panel {
+          position: static;
+          margin: 12px;
+        }
+
+        .hud {
+          left: auto;
+          right: auto;
+          top: auto;
+        }
+
+        .intro,
+        .status {
+          width: auto;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .center-callout {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div class="overlay"></div>
+
+    <section class="panel hud">
+      <div>
+        <div class="badge">Arcade Survival</div>
+        <h1 class="title">Neon Drift</h1>
+        <p class="copy">
+          青いコアを集め、赤いパルスを避け、紫のリッパーをかすめてブースト。視覚エフェクト多めのワンボタン感覚アクションです。
+        </p>
+        <div class="actions">
+          <button id="startButton">スタート / リスタート</button>
+          <button id="pauseButton" class="secondary">一時停止</button>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:#22d3ee"></span><strong>Core</strong> +score +energy</div>
+          <div class="legend-item"><span class="dot" style="background:#fb7185"></span><strong>Pulse</strong> hitでenergy減少</div>
+          <div class="legend-item"><span class="dot" style="background:#8b5cf6"></span><strong>Ripper</strong> near missでbonus</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Score</div>
+          <div class="value" id="scoreValue">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Energy</div>
+          <div class="value is-good" id="energyValue">100</div>
+        </div>
+        <div class="stat">
+          <div class="label">Wave</div>
+          <div class="value" id="waveValue">1</div>
+        </div>
+        <div class="stat">
+          <div class="label">Best</div>
+          <div class="value" id="bestValue">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel intro">
+      <div class="label">操作</div>
+      <div class="tips">
+        <div class="tip"><strong>移動</strong><br />マウス追従、または `WASD / 矢印キー`</div>
+        <div class="tip"><strong>ダッシュ</strong><br />`Space` で短距離ブーストし、しばらく無敵</div>
+        <div class="tip"><strong>目標</strong><br />できるだけ長く生き残り、高スコアを狙う</div>
+      </div>
+    </section>
+
+    <section class="panel status">
+      <div class="label">Live Feed</div>
+      <div class="message-box">
+        <div class="message-title" id="statusTitle">待機中</div>
+        <div class="message-copy" id="statusCopy">スタートすると敵とコアが湧き続けます。派手な軌跡と爆発で画面が賑やかになります。</div>
+      </div>
+      <div class="message-box">
+        <div class="message-title">Tips</div>
+        <div class="message-copy" id="comboCopy">近接回避でスコア倍率が伸びます。赤い弾の密集地帯にあえて飛び込むと熱いです。</div>
+      </div>
+    </section>
+
+    <div class="center-callout" id="centerCallout">
+      <h2>NEON DRIFT</h2>
+      <p>Press Start and survive the storm.</p>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const canvas = document.getElementById('game');
+      const context = canvas.getContext('2d');
+      const scoreValue = document.getElementById('scoreValue');
+      const energyValue = document.getElementById('energyValue');
+      const waveValue = document.getElementById('waveValue');
+      const bestValue = document.getElementById('bestValue');
+      const statusTitle = document.getElementById('statusTitle');
+      const statusCopy = document.getElementById('statusCopy');
+      const comboCopy = document.getElementById('comboCopy');
+      const toast = document.getElementById('toast');
+      const centerCallout = document.getElementById('centerCallout');
+      const startButton = document.getElementById('startButton');
+      const pauseButton = document.getElementById('pauseButton');
+
+      const BEST_KEY = 'neon-drift-best';
+      const pointer = { x: 0, y: 0, active: false };
+      const keys = new Set();
+      let width = 0;
+      let height = 0;
+      let lastTime = 0;
+      let animationFrameId = 0;
+      let screenShake = 0;
+
+      const state = {
+        running: false,
+        paused: false,
+        score: 0,
+        best: Number(localStorage.getItem(BEST_KEY) || 0),
+        wave: 1,
+        energy: 100,
+        combo: 1,
+        comboTimer: 0,
+        spawnTimer: 0,
+        enemySpawnTimer: 0,
+        ripperSpawnTimer: 0,
+        difficultyTimer: 0,
+        invincible: 0,
+        dashCooldown: 0,
+        gameOver: false,
+      };
+
+      const player = {
+        x: 0,
+        y: 0,
+        radius: 14,
+        vx: 0,
+        vy: 0,
+        glow: 0,
+        trail: [],
+      };
+
+      const particles = [];
+      const cores = [];
+      const pulses = [];
+      const rippers = [];
+      const rings = [];
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * Math.min(window.devicePixelRatio || 1, 2);
+        canvas.height = height * Math.min(window.devicePixelRatio || 1, 2);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        context.setTransform(canvas.width / width, 0, 0, canvas.height / height, 0, 0);
+
+        if (!player.x && !player.y) {
+          player.x = width / 2;
+          player.y = height / 2;
+        }
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function lerp(start, end, amount) {
+        return start + (end - start) * amount;
+      }
+
+      function random(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function distance(x1, y1, x2, y2) {
+        return Math.hypot(x2 - x1, y2 - y1);
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('is-visible');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.remove('is-visible'), 1600);
+      }
+
+      function setStatus(title, copy) {
+        statusTitle.textContent = title;
+        statusCopy.textContent = copy;
+      }
+
+      function burst(x, y, color, count, speedMin = 60, speedMax = 240) {
+        for (let index = 0; index < count; index += 1) {
+          const angle = random(0, Math.PI * 2);
+          const speed = random(speedMin, speedMax);
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: random(0.35, 0.9),
+            maxLife: random(0.35, 0.9),
+            size: random(2, 5),
+            color,
+          });
+        }
+      }
+
+      function spawnRing(x, y, color, radius = 10) {
+        rings.push({ x, y, color, radius, life: 0.45, maxLife: 0.45 });
+      }
+
+      function spawnCore() {
+        cores.push({
+          x: random(60, width - 60),
+          y: random(90, height - 60),
+          radius: random(8, 12),
+          pulse: random(0, Math.PI * 2),
+          rotation: random(-1.8, 1.8),
+        });
+      }
+
+      function spawnPulse() {
+        const edge = Math.floor(random(0, 4));
+        let x = 0;
+        let y = 0;
+        if (edge === 0) {
+          x = random(0, width);
+          y = -30;
+        } else if (edge === 1) {
+          x = width + 30;
+          y = random(0, height);
+        } else if (edge === 2) {
+          x = random(0, width);
+          y = height + 30;
+        } else {
+          x = -30;
+          y = random(0, height);
+        }
+
+        const angle = Math.atan2(player.y - y, player.x - x) + random(-0.28, 0.28);
+        const speed = random(90, 140) + state.wave * 8;
+        pulses.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: random(10, 18),
+          spin: random(-2, 2),
+          life: 18,
+          nearMissed: false,
+        });
+      }
+
+      function spawnRipper() {
+        const vertical = Math.random() > 0.5;
+        if (vertical) {
+          const fromLeft = Math.random() > 0.5;
+          const y = random(80, height - 80);
+          const speed = (fromLeft ? 1 : -1) * (260 + state.wave * 18);
+          rippers.push({ x: fromLeft ? -80 : width + 80, y, vx: speed, vy: 0, radius: 20, life: 4.2, nearMissed: false });
+          return;
+        }
+        const fromTop = Math.random() > 0.5;
+        const x = random(80, width - 80);
+        const speed = (fromTop ? 1 : -1) * (260 + state.wave * 18);
+        rippers.push({ x, y: fromTop ? -80 : height + 80, vx: 0, vy: speed, radius: 20, life: 4.2, nearMissed: false });
+      }
+
+      function resetWorld() {
+        particles.length = 0;
+        cores.length = 0;
+        pulses.length = 0;
+        rippers.length = 0;
+        rings.length = 0;
+        player.x = width / 2;
+        player.y = height / 2;
+        player.vx = 0;
+        player.vy = 0;
+        player.trail = [];
+      }
+
+      function startGame() {
+        resetWorld();
+        state.running = true;
+        state.paused = false;
+        state.score = 0;
+        state.wave = 1;
+        state.energy = 100;
+        state.combo = 1;
+        state.comboTimer = 0;
+        state.spawnTimer = 0;
+        state.enemySpawnTimer = 0;
+        state.ripperSpawnTimer = 3;
+        state.difficultyTimer = 0;
+        state.invincible = 0;
+        state.dashCooldown = 0;
+        state.gameOver = false;
+        centerCallout.classList.add('hidden');
+        setStatus('稼働中', '青いコアを拾いながら、赤いパルスの群れを避けてください。');
+        comboCopy.textContent = '近接回避でコンボ倍率が伸びます。スペースダッシュは緊急回避にも使えます。';
+        showToast('ゲーム開始');
+        for (let index = 0; index < 7; index += 1) {
+          spawnCore();
+        }
+        updateHud();
+      }
+
+      function togglePause() {
+        if (!state.running || state.gameOver) {
+          return;
+        }
+        state.paused = !state.paused;
+        if (state.paused) {
+          setStatus('一時停止', '再開するには「一時停止」をもう一度押してください。');
+          showToast('Paused');
+        } else {
+          setStatus('稼働中', '敵の密度がじわじわ上がっています。');
+          showToast('Resumed');
+        }
+      }
+
+      function gameOver() {
+        state.running = false;
+        state.gameOver = true;
+        if (state.score > state.best) {
+          state.best = state.score;
+          localStorage.setItem(BEST_KEY, String(state.best));
+          showToast('ハイスコア更新');
+        } else {
+          showToast('ゲームオーバー');
+        }
+        setStatus('ゲームオーバー', 'リスタートしてもう一度挑戦してください。青いコア回収と near miss を両立すると伸びます。');
+        comboCopy.textContent = `最終スコア ${Math.floor(state.score)} / Wave ${state.wave}`;
+        burst(player.x, player.y, '#fb7185', 60, 80, 320);
+        spawnRing(player.x, player.y, '#fb7185', 20);
+        screenShake = 16;
+        updateHud();
+      }
+
+      function applyInput(delta) {
+        const accel = 760;
+        const friction = 0.9;
+        const usePointer = pointer.active && (Math.abs(pointer.x - player.x) > 8 || Math.abs(pointer.y - player.y) > 8);
+
+        if (usePointer) {
+          player.vx += (pointer.x - player.x) * 3.6 * delta;
+          player.vy += (pointer.y - player.y) * 3.6 * delta;
+        }
+
+        if (keys.has('arrowup') || keys.has('w')) {
+          player.vy -= accel * delta;
+        }
+        if (keys.has('arrowdown') || keys.has('s')) {
+          player.vy += accel * delta;
+        }
+        if (keys.has('arrowleft') || keys.has('a')) {
+          player.vx -= accel * delta;
+        }
+        if (keys.has('arrowright') || keys.has('d')) {
+          player.vx += accel * delta;
+        }
+
+        player.vx *= friction;
+        player.vy *= friction;
+        player.x += player.vx * delta;
+        player.y += player.vy * delta;
+        player.x = clamp(player.x, player.radius, width - player.radius);
+        player.y = clamp(player.y, player.radius, height - player.radius);
+
+        player.trail.push({ x: player.x, y: player.y, life: 0.5 + state.invincible * 0.02 });
+        if (player.trail.length > 20) {
+          player.trail.shift();
+        }
+      }
+
+      function useDash() {
+        if (!state.running || state.paused || state.gameOver || state.dashCooldown > 0) {
+          return;
+        }
+        let angle = Math.atan2(player.vy, player.vx);
+        if (!Number.isFinite(angle) || Math.abs(player.vx) + Math.abs(player.vy) < 10) {
+          angle = pointer.active ? Math.atan2(pointer.y - player.y, pointer.x - player.x) : -Math.PI / 2;
+        }
+        player.vx += Math.cos(angle) * 520;
+        player.vy += Math.sin(angle) * 520;
+        state.invincible = 0.35;
+        state.dashCooldown = 1.2;
+        spawnRing(player.x, player.y, '#22d3ee', 12);
+        burst(player.x, player.y, '#22d3ee', 18, 90, 240);
+        showToast('Dash');
+      }
+
+      function updateCores(delta) {
+        for (let index = cores.length - 1; index >= 0; index -= 1) {
+          const core = cores[index];
+          core.pulse += delta * 4;
+          const hit = distance(player.x, player.y, core.x, core.y) < player.radius + core.radius + 6;
+          if (hit) {
+            cores.splice(index, 1);
+            state.score += 130 * state.combo;
+            state.energy = clamp(state.energy + 7, 0, 100);
+            state.combo = clamp(state.combo + 0.12, 1, 5);
+            state.comboTimer = 2.4;
+            burst(core.x, core.y, '#22d3ee', 18);
+            spawnRing(core.x, core.y, '#22d3ee', 10);
+            if (cores.length < 6) {
+              spawnCore();
+            }
+          }
+        }
+      }
+
+      function updatePulses(delta) {
+        for (let index = pulses.length - 1; index >= 0; index -= 1) {
+          const pulse = pulses[index];
+          pulse.x += pulse.vx * delta;
+          pulse.y += pulse.vy * delta;
+          pulse.life -= delta;
+          const dist = distance(player.x, player.y, pulse.x, pulse.y);
+
+          if (!pulse.nearMissed && dist < player.radius + pulse.radius + 26 && dist > player.radius + pulse.radius) {
+            pulse.nearMissed = true;
+            state.score += 45 * state.combo;
+            state.combo = clamp(state.combo + 0.08, 1, 5);
+            state.comboTimer = 1.8;
+            burst(pulse.x, pulse.y, '#8b5cf6', 8, 30, 120);
+          }
+
+          if (dist < player.radius + pulse.radius) {
+            if (state.invincible <= 0) {
+              state.energy -= 24;
+              state.combo = 1;
+              state.comboTimer = 0;
+              burst(player.x, player.y, '#fb7185', 26, 80, 260);
+              spawnRing(player.x, player.y, '#fb7185', 12);
+              screenShake = 10;
+              pulses.splice(index, 1);
+              if (state.energy <= 0) {
+                state.energy = 0;
+                gameOver();
+                return;
+              }
+              continue;
+            }
+            pulses.splice(index, 1);
+            burst(pulse.x, pulse.y, '#22d3ee', 12, 60, 180);
+            continue;
+          }
+
+          if (pulse.life <= 0 || pulse.x < -120 || pulse.x > width + 120 || pulse.y < -120 || pulse.y > height + 120) {
+            pulses.splice(index, 1);
+          }
+        }
+      }
+
+      function updateRippers(delta) {
+        for (let index = rippers.length - 1; index >= 0; index -= 1) {
+          const ripper = rippers[index];
+          ripper.x += ripper.vx * delta;
+          ripper.y += ripper.vy * delta;
+          ripper.life -= delta;
+          const dist = distance(player.x, player.y, ripper.x, ripper.y);
+
+          if (!ripper.nearMissed && dist < ripper.radius + 38 && dist > ripper.radius + player.radius) {
+            ripper.nearMissed = true;
+            state.score += 220 * state.combo;
+            state.combo = clamp(state.combo + 0.25, 1, 5);
+            state.comboTimer = 3.2;
+            spawnRing(ripper.x, ripper.y, '#8b5cf6', 16);
+            burst(ripper.x, ripper.y, '#8b5cf6', 16, 70, 220);
+            showToast('Near miss bonus');
+          }
+
+          if (dist < player.radius + ripper.radius) {
+            if (state.invincible <= 0) {
+              state.energy = 0;
+              gameOver();
+              return;
+            }
+            rippers.splice(index, 1);
+            continue;
+          }
+
+          if (ripper.life <= 0 || ripper.x < -140 || ripper.x > width + 140 || ripper.y < -140 || ripper.y > height + 140) {
+            rippers.splice(index, 1);
+          }
+        }
+      }
+
+      function updateParticles(delta) {
+        for (let index = particles.length - 1; index >= 0; index -= 1) {
+          const particle = particles[index];
+          particle.x += particle.vx * delta;
+          particle.y += particle.vy * delta;
+          particle.vx *= 0.985;
+          particle.vy *= 0.985;
+          particle.life -= delta;
+          if (particle.life <= 0) {
+            particles.splice(index, 1);
+          }
+        }
+
+        for (let index = rings.length - 1; index >= 0; index -= 1) {
+          const ring = rings[index];
+          ring.radius += delta * 120;
+          ring.life -= delta;
+          if (ring.life <= 0) {
+            rings.splice(index, 1);
+          }
+        }
+
+        for (let index = player.trail.length - 1; index >= 0; index -= 1) {
+          player.trail[index].life -= delta;
+          if (player.trail[index].life <= 0) {
+            player.trail.splice(index, 1);
+          }
+        }
+      }
+
+      function updateDifficulty(delta) {
+        state.spawnTimer -= delta;
+        state.enemySpawnTimer -= delta;
+        state.ripperSpawnTimer -= delta;
+        state.difficultyTimer += delta;
+        state.invincible = Math.max(0, state.invincible - delta);
+        state.dashCooldown = Math.max(0, state.dashCooldown - delta);
+
+        if (state.comboTimer > 0) {
+          state.comboTimer -= delta;
+        } else {
+          state.combo = lerp(state.combo, 1, 0.03);
+        }
+
+        if (state.spawnTimer <= 0) {
+          spawnCore();
+          state.spawnTimer = random(1.3, 2.4);
+        }
+
+        if (state.enemySpawnTimer <= 0) {
+          spawnPulse();
+          state.enemySpawnTimer = Math.max(0.18, 0.72 - state.wave * 0.035 + random(-0.08, 0.08));
+        }
+
+        if (state.ripperSpawnTimer <= 0) {
+          spawnRipper();
+          state.ripperSpawnTimer = Math.max(2.8, 7.2 - state.wave * 0.18 + random(-0.3, 0.4));
+        }
+
+        const computedWave = 1 + Math.floor(state.difficultyTimer / 12);
+        if (computedWave !== state.wave) {
+          state.wave = computedWave;
+          showToast(`Wave ${state.wave}`);
+          setStatus('難度上昇', '敵の速度と密度が上がっています。ダッシュと near miss を活かしてください。');
+          burst(player.x, player.y, '#f59e0b', 18, 50, 160);
+        }
+
+        state.score += delta * 22 * state.combo;
+        state.energy = clamp(state.energy - delta * 1.8, 0, 100);
+        if (state.energy <= 0) {
+          state.energy = 0;
+          gameOver();
+        }
+      }
+
+      function updateHud() {
+        scoreValue.textContent = Math.floor(state.score).toString();
+        energyValue.textContent = Math.ceil(state.energy).toString();
+        energyValue.classList.toggle('is-danger', state.energy < 30);
+        energyValue.classList.toggle('is-good', state.energy >= 30);
+        waveValue.textContent = state.wave.toString();
+        bestValue.textContent = Math.floor(state.best).toString();
+        comboCopy.textContent = state.gameOver
+          ? comboCopy.textContent
+          : `Combo x${state.combo.toFixed(2)} / Dash cooldown ${state.dashCooldown > 0 ? state.dashCooldown.toFixed(1) + 's' : 'ready'}`;
+      }
+
+      function drawBackground(time) {
+        context.clearRect(0, 0, width, height);
+
+        const gradient = context.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, '#040816');
+        gradient.addColorStop(1, '#02040c');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, width, height);
+
+        context.save();
+        context.globalAlpha = 0.18;
+        for (let index = 0; index < 40; index += 1) {
+          const x = ((index * 211.37 + time * 8) % (width + 160)) - 80;
+          const y = ((index * 117.73 + time * 14) % (height + 160)) - 80;
+          context.fillStyle = index % 2 === 0 ? '#22d3ee' : '#8b5cf6';
+          context.beginPath();
+          context.arc(x, y, 1.5 + (index % 3), 0, Math.PI * 2);
+          context.fill();
+        }
+        context.restore();
+      }
+
+      function drawGrid(time) {
+        context.save();
+        context.translate(screenShake ? random(-screenShake, screenShake) : 0, screenShake ? random(-screenShake, screenShake) : 0);
+        context.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        context.lineWidth = 1;
+        const spacing = 46;
+        const offsetX = (time * 18) % spacing;
+        const offsetY = (time * 12) % spacing;
+        for (let x = -spacing; x < width + spacing; x += spacing) {
+          context.beginPath();
+          context.moveTo(x + offsetX, 0);
+          context.lineTo(x + offsetX, height);
+          context.stroke();
+        }
+        for (let y = -spacing; y < height + spacing; y += spacing) {
+          context.beginPath();
+          context.moveTo(0, y + offsetY);
+          context.lineTo(width, y + offsetY);
+          context.stroke();
+        }
+        context.restore();
+      }
+
+      function drawTrail() {
+        context.save();
+        for (const point of player.trail) {
+          context.globalAlpha = point.life * 0.35;
+          context.fillStyle = state.invincible > 0 ? '#f8fafc' : '#22d3ee';
+          context.beginPath();
+          context.arc(point.x, point.y, player.radius * point.life, 0, Math.PI * 2);
+          context.fill();
+        }
+        context.restore();
+      }
+
+      function drawPlayer() {
+        context.save();
+        context.shadowBlur = 30;
+        context.shadowColor = state.invincible > 0 ? '#f8fafc' : '#22d3ee';
+        context.fillStyle = state.invincible > 0 ? '#ffffff' : '#67e8f9';
+        context.beginPath();
+        context.arc(player.x, player.y, player.radius + Math.sin(performance.now() / 120) * 1.5, 0, Math.PI * 2);
+        context.fill();
+
+        context.strokeStyle = 'rgba(255,255,255,0.9)';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.arc(player.x, player.y, player.radius + 6 + Math.sin(performance.now() / 180) * 2, 0, Math.PI * 2);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawCores(time) {
+        for (const core of cores) {
+          const pulse = 1 + Math.sin(core.pulse) * 0.14;
+          context.save();
+          context.translate(core.x, core.y);
+          context.rotate(time * 0.8 + core.rotation);
+          context.shadowBlur = 26;
+          context.shadowColor = '#22d3ee';
+          context.fillStyle = '#67e8f9';
+          context.beginPath();
+          context.arc(0, 0, core.radius * pulse, 0, Math.PI * 2);
+          context.fill();
+
+          context.strokeStyle = 'rgba(255,255,255,0.85)';
+          context.lineWidth = 2;
+          context.beginPath();
+          context.moveTo(-core.radius * 1.8, 0);
+          context.lineTo(core.radius * 1.8, 0);
+          context.moveTo(0, -core.radius * 1.8);
+          context.lineTo(0, core.radius * 1.8);
+          context.stroke();
+          context.restore();
+        }
+      }
+
+      function drawPulses(time) {
+        for (const pulse of pulses) {
+          context.save();
+          context.translate(pulse.x, pulse.y);
+          context.rotate(time * pulse.spin);
+          context.shadowBlur = 30;
+          context.shadowColor = '#fb7185';
+          context.fillStyle = '#fb7185';
+          context.globalAlpha = 0.85;
+          for (let index = 0; index < 6; index += 1) {
+            const angle = (Math.PI * 2 * index) / 6;
+            context.beginPath();
+            context.arc(Math.cos(angle) * 8, Math.sin(angle) * 8, pulse.radius * 0.48, 0, Math.PI * 2);
+            context.fill();
+          }
+          context.fillStyle = '#ffe4e6';
+          context.beginPath();
+          context.arc(0, 0, pulse.radius * 0.42, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
+      }
+
+      function drawRippers(time) {
+        for (const ripper of rippers) {
+          context.save();
+          context.translate(ripper.x, ripper.y);
+          context.rotate(time * 5);
+          context.shadowBlur = 26;
+          context.shadowColor = '#8b5cf6';
+          context.strokeStyle = '#c4b5fd';
+          context.lineWidth = 4;
+          context.beginPath();
+          context.moveTo(-ripper.radius, 0);
+          context.lineTo(0, -ripper.radius * 1.2);
+          context.lineTo(ripper.radius, 0);
+          context.lineTo(0, ripper.radius * 1.2);
+          context.closePath();
+          context.stroke();
+          context.restore();
+        }
+      }
+
+      function drawParticles() {
+        for (const particle of particles) {
+          context.save();
+          context.globalAlpha = particle.life / particle.maxLife;
+          context.fillStyle = particle.color;
+          context.shadowBlur = 16;
+          context.shadowColor = particle.color;
+          context.beginPath();
+          context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
+
+        for (const ring of rings) {
+          context.save();
+          context.globalAlpha = ring.life / ring.maxLife;
+          context.strokeStyle = ring.color;
+          context.lineWidth = 3;
+          context.beginPath();
+          context.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+          context.stroke();
+          context.restore();
+        }
+      }
+
+      function drawUiHints() {
+        if (state.running && !state.paused && !state.gameOver) {
+          context.save();
+          context.globalAlpha = 0.7;
+          context.strokeStyle = 'rgba(255,255,255,0.18)';
+          context.setLineDash([8, 10]);
+          context.beginPath();
+          context.arc(player.x, player.y, 54, 0, Math.PI * 2);
+          context.stroke();
+          context.restore();
+        }
+      }
+
+      function loop(timestamp) {
+        const delta = Math.min((timestamp - lastTime) / 1000 || 0.016, 0.033);
+        lastTime = timestamp;
+        const time = timestamp / 1000;
+
+        if (screenShake > 0) {
+          screenShake = Math.max(0, screenShake - delta * 22);
+        }
+
+        drawBackground(time);
+        drawGrid(time);
+
+        if (state.running && !state.paused && !state.gameOver) {
+          applyInput(delta);
+          updateDifficulty(delta);
+          updateCores(delta);
+          updatePulses(delta);
+          updateRippers(delta);
+          updateParticles(delta);
+          updateHud();
+        } else {
+          updateParticles(delta);
+        }
+
+        drawTrail();
+        drawCores(time);
+        drawPulses(time);
+        drawRippers(time);
+        drawParticles();
+        drawPlayer();
+        drawUiHints();
+
+        if (state.paused) {
+          context.save();
+          context.fillStyle = 'rgba(2, 6, 23, 0.4)';
+          context.fillRect(0, 0, width, height);
+          context.fillStyle = '#e2e8f0';
+          context.font = '700 44px Inter, sans-serif';
+          context.textAlign = 'center';
+          context.fillText('PAUSED', width / 2, height / 2);
+          context.restore();
+        }
+
+        animationFrameId = requestAnimationFrame(loop);
+      }
+
+      window.addEventListener('resize', resize);
+      window.addEventListener('pointermove', (event) => {
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        pointer.active = true;
+      });
+      window.addEventListener('pointerdown', (event) => {
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        pointer.active = true;
+        if (state.running && !state.paused && !state.gameOver) {
+          useDash();
+        }
+      });
+      window.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
+          keys.add(key);
+        }
+        if (key === ' ') {
+          event.preventDefault();
+          useDash();
+        }
+        if (key === 'p') {
+          togglePause();
+        }
+      });
+      window.addEventListener('keyup', (event) => {
+        keys.delete(event.key.toLowerCase());
+      });
+
+      startButton.addEventListener('click', startGame);
+      pauseButton.addEventListener('click', togglePause);
+
+      resize();
+      updateHud();
+      setStatus('待機中', 'スタートするとコアと敵が大量に出現します。ダッシュはクリックか Space です。');
+      animationFrameId = requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>

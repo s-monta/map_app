@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Starfall Frontier RPG</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #020617;
+        --panel: rgba(7, 14, 28, 0.78);
+        --panel-strong: rgba(9, 17, 34, 0.92);
+        --border: rgba(148, 163, 184, 0.18);
+        --text: #e2e8f0;
+        --muted: #93a4bc;
+        --cyan: #22d3ee;
+        --violet: #8b5cf6;
+        --green: #22c55e;
+        --amber: #f59e0b;
+        --rose: #fb7185;
+        --shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 24%),
+          radial-gradient(circle at top right, rgba(139, 92, 246, 0.08), transparent 22%),
+          linear-gradient(180deg, #040816, #020617 58%, #01030a);
+        color: var(--text);
+        font-family: Inter, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      }
+
+      body {
+        position: relative;
+      }
+
+      canvas {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+
+      .panel {
+        position: absolute;
+        z-index: 3;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+      }
+
+      .topbar {
+        top: 16px;
+        left: 16px;
+        right: 16px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+        gap: 16px;
+        padding: 16px;
+        border-radius: 24px;
+      }
+
+      .sidebar {
+        bottom: 16px;
+        left: 16px;
+        width: min(420px, calc(100vw - 32px));
+        padding: 18px;
+        border-radius: 24px;
+      }
+
+      .logpanel {
+        bottom: 16px;
+        right: 16px;
+        width: min(380px, calc(100vw - 32px));
+        padding: 18px;
+        border-radius: 24px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--cyan);
+        background: rgba(34, 211, 238, 0.1);
+        border: 1px solid rgba(34, 211, 238, 0.2);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      .title {
+        margin-top: 10px;
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+      }
+
+      .copy,
+      .muted,
+      .label,
+      .help {
+        color: var(--muted);
+      }
+
+      .copy {
+        margin-top: 10px;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat,
+      .card,
+      .quest,
+      .log-line {
+        padding: 12px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 800;
+      }
+
+      .health-bar,
+      .mana-bar,
+      .xp-bar,
+      .boss-bar {
+        position: relative;
+        overflow: hidden;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        margin-top: 10px;
+      }
+
+      .fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 50%;
+        border-radius: inherit;
+      }
+
+      .fill.health {
+        background: linear-gradient(90deg, #fb7185, #f43f5e);
+      }
+
+      .fill.mana {
+        background: linear-gradient(90deg, #22d3ee, #38bdf8);
+      }
+
+      .fill.xp {
+        background: linear-gradient(90deg, #a78bfa, #8b5cf6);
+      }
+
+      .fill.boss {
+        background: linear-gradient(90deg, #f59e0b, #ef4444);
+      }
+
+      .meta-grid,
+      .action-row,
+      .cards,
+      .quests,
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .meta-grid,
+      .cards,
+      .quests {
+        margin-top: 14px;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 14px;
+        padding: 10px 14px;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        background: linear-gradient(135deg, rgba(34, 211, 238, 0.16), rgba(139, 92, 246, 0.18));
+        transition: transform 160ms ease, opacity 160ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button.secondary {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .quest.is-active {
+        border-color: rgba(34, 211, 238, 0.24);
+        box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.14) inset;
+      }
+
+      .quest-title,
+      .card-title {
+        font-weight: 700;
+      }
+
+      .log {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+        max-height: 240px;
+        overflow: auto;
+      }
+
+      .log-line {
+        padding: 10px 12px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .center-card {
+        position: absolute;
+        z-index: 4;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(520px, calc(100vw - 32px));
+        padding: 22px;
+        border-radius: 28px;
+        background: rgba(8, 14, 28, 0.82);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        backdrop-filter: blur(20px);
+        box-shadow: var(--shadow);
+        text-align: center;
+      }
+
+      .center-card.hidden {
+        display: none;
+      }
+
+      .big {
+        font-size: clamp(34px, 7vw, 78px);
+        letter-spacing: -0.06em;
+      }
+
+      .toast {
+        position: absolute;
+        top: 108px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-16px);
+        z-index: 5;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(10, 16, 32, 0.92);
+        border: 1px solid rgba(34, 211, 238, 0.18);
+        color: #cffafe;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 220ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      @media (max-width: 980px) {
+        .topbar {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        html,
+        body {
+          overflow: auto;
+        }
+
+        canvas {
+          position: fixed;
+          inset: 0;
+        }
+
+        .panel {
+          position: static;
+          margin: 12px;
+        }
+
+        .stats,
+        .cards {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <section class="panel topbar">
+      <div>
+        <div class="badge">Action RPG</div>
+        <h1 class="title">Starfall Frontier</h1>
+        <p class="copy">
+          町と荒野を行き来し、敵を倒して経験値を稼ぎ、クエストを進めるシンプルなアクションRPGです。`WASD` / 矢印で移動、`J` 攻撃、`K` スペル、`L` ポーション、`E` 会話です。
+        </p>
+        <div class="meta-grid">
+          <button id="startButton">冒険開始 / リスタート</button>
+          <button id="pauseButton" class="secondary">一時停止</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Level</div>
+          <div class="value" id="levelValue">1</div>
+        </div>
+        <div class="stat">
+          <div class="label">Gold</div>
+          <div class="value" id="goldValue">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Potions</div>
+          <div class="value" id="potionValue">3</div>
+        </div>
+        <div class="stat">
+          <div class="label">Zone</div>
+          <div class="value" id="zoneValue">Town</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">HP</div>
+        <div class="health-bar"><div class="fill health" id="healthFill"></div></div>
+        <div class="label" style="margin-top:12px">Mana</div>
+        <div class="mana-bar"><div class="fill mana" id="manaFill"></div></div>
+        <div class="label" style="margin-top:12px">XP</div>
+        <div class="xp-bar"><div class="fill xp" id="xpFill"></div></div>
+        <div class="label" style="margin-top:12px">Boss Threat</div>
+        <div class="boss-bar"><div class="fill boss" id="bossFill"></div></div>
+      </div>
+    </section>
+
+    <section class="panel sidebar">
+      <div class="label">Hero</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">Aria</div>
+          <div class="muted" id="heroStats">剣士 Lv1 / Attack 14 / Magic 10</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Objective</div>
+          <div class="muted" id="objectiveText">広場の賢者に話しかけよう</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Combat</div>
+          <div class="muted" id="combatText">まだ戦闘していません</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Inventory</div>
+          <div class="muted" id="inventoryText">Potion x3 / Ether x1</div>
+        </div>
+      </div>
+
+      <div class="label" style="margin-top:14px">Quest Log</div>
+      <div class="quests" id="questList"></div>
+    </section>
+
+    <section class="panel logpanel">
+      <div class="label">Adventure Log</div>
+      <div class="log" id="logList"></div>
+      <div class="help" style="margin-top:12px">
+        `E` でNPCに会話 / ポータル前で `E` で荒野へ移動 / ボス撃破でクエスト完了。
+      </div>
+    </section>
+
+    <div class="center-card" id="centerCard">
+      <div class="badge">RPG Start</div>
+      <h2 class="big">Starfall Frontier</h2>
+      <p class="copy">星の欠片を集めるため、賢者の依頼を受けて荒野へ向かうアクションRPGです。</p>
+      <div class="controls" style="justify-content:center; margin-top:18px">
+        <button id="overlayStartButton">冒険を始める</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const canvas = document.getElementById('game');
+      const context = canvas.getContext('2d');
+      const toast = document.getElementById('toast');
+      const centerCard = document.getElementById('centerCard');
+      const startButton = document.getElementById('startButton');
+      const overlayStartButton = document.getElementById('overlayStartButton');
+      const pauseButton = document.getElementById('pauseButton');
+      const levelValue = document.getElementById('levelValue');
+      const goldValue = document.getElementById('goldValue');
+      const potionValue = document.getElementById('potionValue');
+      const zoneValue = document.getElementById('zoneValue');
+      const healthFill = document.getElementById('healthFill');
+      const manaFill = document.getElementById('manaFill');
+      const xpFill = document.getElementById('xpFill');
+      const bossFill = document.getElementById('bossFill');
+      const heroStats = document.getElementById('heroStats');
+      const objectiveText = document.getElementById('objectiveText');
+      const combatText = document.getElementById('combatText');
+      const inventoryText = document.getElementById('inventoryText');
+      const questList = document.getElementById('questList');
+      const logList = document.getElementById('logList');
+
+      let width = 0;
+      let height = 0;
+      let lastTime = 0;
+      let animationId = 0;
+      const keys = new Set();
+      let screenFlash = 0;
+
+      const state = {
+        running: false,
+        paused: false,
+        gameOver: false,
+        zone: 'town',
+        log: [],
+        quests: [],
+        bossUnlocked: false,
+      };
+
+      const hero = {
+        x: 0,
+        y: 0,
+        radius: 16,
+        speed: 220,
+        hp: 120,
+        maxHp: 120,
+        mana: 70,
+        maxMana: 70,
+        level: 1,
+        xp: 0,
+        xpToNext: 100,
+        gold: 0,
+        potions: 3,
+        ethers: 1,
+        attack: 14,
+        magic: 10,
+        invuln: 0,
+        attackCooldown: 0,
+        spellCooldown: 0,
+        facing: 1,
+      };
+
+      const effects = [];
+      const enemies = [];
+      const projectiles = [];
+      const drops = [];
+      const stars = [];
+
+      const npc = {
+        x: 220,
+        y: 220,
+        radius: 24,
+        name: '賢者オルン',
+      };
+
+      const portal = {
+        x: 0,
+        y: 0,
+        radius: 28,
+      };
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('is-visible');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.remove('is-visible'), 1600);
+      }
+
+      function pushLog(message) {
+        state.log.unshift(message);
+        state.log = state.log.slice(0, 8);
+        renderLog();
+      }
+
+      function renderLog() {
+        logList.innerHTML = '';
+        for (const line of state.log) {
+          const item = document.createElement('div');
+          item.className = 'log-line';
+          item.textContent = line;
+          logList.appendChild(item);
+        }
+      }
+
+      function renderQuests() {
+        questList.innerHTML = '';
+        for (const quest of state.quests) {
+          const item = document.createElement('div');
+          item.className = `quest${quest.status === 'active' ? ' is-active' : ''}`;
+          item.innerHTML = `
+            <div class="quest-title">${quest.title}</div>
+            <div class="muted">${quest.description}</div>
+            <div class="muted">${quest.progressLabel}</div>
+          `;
+          questList.appendChild(item);
+        }
+      }
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = width * pixelRatio;
+        canvas.height = height * pixelRatio;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        portal.x = width - 180;
+        portal.y = height - 210;
+        if (!hero.x && !hero.y) {
+          hero.x = width / 2;
+          hero.y = height / 2;
+        }
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function random(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function distance(x1, y1, x2, y2) {
+        return Math.hypot(x2 - x1, y2 - y1);
+      }
+
+      function initStars() {
+        stars.length = 0;
+        for (let index = 0; index < 90; index += 1) {
+          stars.push({ x: random(0, width), y: random(0, height), size: random(1, 3), speed: random(4, 20) });
+        }
+      }
+
+      function setupQuests() {
+        state.quests = [
+          {
+            id: 'talk-sage',
+            title: '賢者の導き',
+            description: '町の広場にいる賢者オルンに話しかける',
+            status: 'active',
+            progress: 0,
+            target: 1,
+            progressLabel: '未達成',
+          },
+          {
+            id: 'collect-shards',
+            title: '星片の回収',
+            description: '荒野で星片を 5 個集める',
+            status: 'locked',
+            progress: 0,
+            target: 5,
+            progressLabel: '0 / 5',
+          },
+          {
+            id: 'defeat-boss',
+            title: '深淵の獣',
+            description: '荒野のボスを倒す',
+            status: 'locked',
+            progress: 0,
+            target: 1,
+            progressLabel: '未出現',
+          },
+        ];
+        renderQuests();
+      }
+
+      function resetHero() {
+        hero.x = width / 2;
+        hero.y = height / 2;
+        hero.hp = hero.maxHp;
+        hero.mana = hero.maxMana;
+        hero.level = 1;
+        hero.xp = 0;
+        hero.xpToNext = 100;
+        hero.gold = 25;
+        hero.potions = 3;
+        hero.ethers = 1;
+        hero.attack = 14;
+        hero.magic = 10;
+        hero.invuln = 0;
+        hero.attackCooldown = 0;
+        hero.spellCooldown = 0;
+      }
+
+      function clearWorld() {
+        enemies.length = 0;
+        projectiles.length = 0;
+        drops.length = 0;
+        effects.length = 0;
+      }
+
+      function startGame() {
+        state.running = true;
+        state.paused = false;
+        state.gameOver = false;
+        state.zone = 'town';
+        state.bossUnlocked = false;
+        clearWorld();
+        resetHero();
+        setupQuests();
+        centerCard.classList.add('hidden');
+        pushLog('目を覚ましたアリアは、星見町の広場へ向かった。');
+        pushLog('賢者オルンに話しかけて冒険を始めよう。');
+        showToast('冒険開始');
+        updateHud();
+      }
+
+      function updateQuest(id, progress, status) {
+        const quest = state.quests.find((entry) => entry.id === id);
+        if (!quest) {
+          return;
+        }
+        if (typeof progress === 'number') {
+          quest.progress = progress;
+        }
+        if (status) {
+          quest.status = status;
+        }
+        if (quest.id === 'talk-sage') {
+          quest.progressLabel = quest.status === 'completed' ? '達成済み' : '未達成';
+        } else if (quest.id === 'collect-shards') {
+          quest.progressLabel = `${quest.progress} / ${quest.target}`;
+        } else if (quest.id === 'defeat-boss') {
+          quest.progressLabel = quest.status === 'completed' ? '達成済み' : state.bossUnlocked ? '討伐対象あり' : '未出現';
+        }
+        renderQuests();
+      }
+
+      function getQuest(id) {
+        return state.quests.find((entry) => entry.id === id);
+      }
+
+      function enterZone(zone) {
+        clearWorld();
+        state.zone = zone;
+        if (zone === 'town') {
+          hero.x = width / 2;
+          hero.y = height / 2 + 40;
+          hero.hp = clamp(hero.hp + 18, 0, hero.maxHp);
+          hero.mana = clamp(hero.mana + 20, 0, hero.maxMana);
+          pushLog('星見町に戻った。焚き火のぬくもりで少し回復した。');
+          objectiveText.textContent = getQuest('talk-sage').status !== 'completed' ? '広場の賢者に話しかけよう' : getQuest('defeat-boss').status === 'completed' ? '町で勝利の余韻に浸ろう' : 'ポータルから荒野へ向かおう';
+        } else {
+          hero.x = 120;
+          hero.y = height - 140;
+          pushLog('星屑荒野へ足を踏み入れた。敵影が濃い。');
+          objectiveText.textContent = getQuest('collect-shards').status !== 'completed' ? '星片を集めよう' : getQuest('defeat-boss').status !== 'completed' ? '深淵の獣を倒そう' : 'ポータルで町に戻ろう';
+          spawnWave();
+        }
+        updateHud();
+      }
+
+      function spawnEnemy(type = 'slime') {
+        const side = Math.floor(random(0, 4));
+        let x = 0;
+        let y = 0;
+        if (side === 0) {
+          x = -40;
+          y = random(70, height - 70);
+        } else if (side === 1) {
+          x = width + 40;
+          y = random(70, height - 70);
+        } else if (side === 2) {
+          x = random(70, width - 70);
+          y = -40;
+        } else {
+          x = random(70, width - 70);
+          y = height + 40;
+        }
+
+        const enemy = {
+          type,
+          x,
+          y,
+          radius: type === 'boss' ? 38 : type === 'wisp' ? 13 : 18,
+          speed: type === 'boss' ? 76 : type === 'wisp' ? 118 : 90,
+          hp: type === 'boss' ? 360 : type === 'wisp' ? 28 : 56,
+          maxHp: type === 'boss' ? 360 : type === 'wisp' ? 28 : 56,
+          damage: type === 'boss' ? 24 : type === 'wisp' ? 10 : 14,
+          color: type === 'boss' ? '#f59e0b' : type === 'wisp' ? '#22d3ee' : '#8b5cf6',
+          xp: type === 'boss' ? 220 : type === 'wisp' ? 28 : 42,
+          gold: type === 'boss' ? 120 : type === 'wisp' ? 10 : 18,
+          cooldown: random(0.6, 1.4),
+        };
+        enemies.push(enemy);
+      }
+
+      function spawnWave() {
+        const shardsQuest = getQuest('collect-shards');
+        const bossQuest = getQuest('defeat-boss');
+        const normalCount = 4 + hero.level;
+        for (let index = 0; index < normalCount; index += 1) {
+          spawnEnemy(Math.random() > 0.42 ? 'slime' : 'wisp');
+        }
+        if (shardsQuest.status === 'completed' && bossQuest.status !== 'completed' && !state.bossUnlocked) {
+          state.bossUnlocked = true;
+          bossQuest.status = 'active';
+          updateQuest('defeat-boss');
+          spawnEnemy('boss');
+          pushLog('空が裂け、深淵の獣が姿を現した。');
+          showToast('Boss Appears');
+        }
+      }
+
+      function addEffect(x, y, color, count = 14, size = 3) {
+        for (let index = 0; index < count; index += 1) {
+          const angle = random(0, Math.PI * 2);
+          const speed = random(50, 220);
+          effects.push({
+            type: 'particle',
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: random(0.35, 0.8),
+            maxLife: random(0.35, 0.8),
+            size: random(1, size),
+            color,
+          });
+        }
+      }
+
+      function addRing(x, y, color, radius = 14) {
+        effects.push({ type: 'ring', x, y, color, radius, life: 0.55, maxLife: 0.55 });
+      }
+
+      function castSword() {
+        if (!state.running || state.paused || state.gameOver || hero.attackCooldown > 0) {
+          return;
+        }
+        hero.attackCooldown = 0.34;
+        const slashRange = 68;
+        let hitCount = 0;
+        for (const enemy of enemies) {
+          const dist = distance(hero.x, hero.y, enemy.x, enemy.y);
+          if (dist <= slashRange) {
+            enemy.hp -= hero.attack;
+            hitCount += 1;
+            addEffect(enemy.x, enemy.y, '#f8fafc', 8, 2.5);
+          }
+        }
+        addRing(hero.x + hero.facing * 24, hero.y, '#f8fafc', 18);
+        combatText.textContent = hitCount > 0 ? `剣撃が ${hitCount} 体に命中` : '剣撃は空を切った';
+      }
+
+      function castSpell() {
+        if (!state.running || state.paused || state.gameOver || hero.spellCooldown > 0 || hero.mana < 18) {
+          return;
+        }
+        hero.mana -= 18;
+        hero.spellCooldown = 1.1;
+        projectiles.push({
+          x: hero.x,
+          y: hero.y,
+          vx: hero.facing * 420,
+          vy: 0,
+          radius: 10,
+          life: 1.3,
+          damage: hero.magic + 12,
+          color: '#22d3ee',
+          fromHero: true,
+        });
+        addEffect(hero.x, hero.y, '#22d3ee', 16, 3.5);
+        combatText.textContent = 'アストラルボルトを放った';
+      }
+
+      function usePotion() {
+        if (!state.running || state.paused || state.gameOver || hero.potions <= 0 || hero.hp >= hero.maxHp) {
+          return;
+        }
+        hero.potions -= 1;
+        hero.hp = clamp(hero.hp + 45, 0, hero.maxHp);
+        addRing(hero.x, hero.y, '#22c55e', 18);
+        showToast('Potion used');
+        pushLog('ポーションで体力を回復した。');
+        updateHud();
+      }
+
+      function talkOrTravel() {
+        if (!state.running || state.paused || state.gameOver) {
+          return;
+        }
+
+        if (state.zone === 'town' && distance(hero.x, hero.y, npc.x, npc.y) < hero.radius + npc.radius + 34) {
+          const talkQuest = getQuest('talk-sage');
+          if (talkQuest.status !== 'completed') {
+            talkQuest.status = 'completed';
+            updateQuest('talk-sage');
+            const collectQuest = getQuest('collect-shards');
+            collectQuest.status = 'active';
+            updateQuest('collect-shards');
+            objectiveText.textContent = 'ポータルから荒野へ向かおう';
+            hero.gold += 25;
+            pushLog('賢者オルン: 星片を 5 個集め、荒野の異変を止めてくれ。');
+            showToast('Quest Accepted');
+          } else {
+            pushLog('賢者オルン: ポータルの先で星片を集め、深淵の獣を退けるのだ。');
+          }
+          updateHud();
+          return;
+        }
+
+        if (distance(hero.x, hero.y, portal.x, portal.y) < hero.radius + portal.radius + 28) {
+          enterZone(state.zone === 'town' ? 'wilds' : 'town');
+        }
+      }
+
+      function levelUp() {
+        while (hero.xp >= hero.xpToNext) {
+          hero.xp -= hero.xpToNext;
+          hero.level += 1;
+          hero.xpToNext = Math.round(hero.xpToNext * 1.34);
+          hero.maxHp += 22;
+          hero.hp = hero.maxHp;
+          hero.maxMana += 12;
+          hero.mana = hero.maxMana;
+          hero.attack += 5;
+          hero.magic += 4;
+          hero.gold += 30;
+          hero.potions += 1;
+          addRing(hero.x, hero.y, '#8b5cf6', 24);
+          addEffect(hero.x, hero.y, '#8b5cf6', 30, 4);
+          showToast(`Level ${hero.level}!`);
+          pushLog(`アリアはレベル ${hero.level} に到達した。`);
+        }
+      }
+
+      function enemyDefeated(enemy) {
+        hero.xp += enemy.xp;
+        hero.gold += enemy.gold;
+        addEffect(enemy.x, enemy.y, enemy.color, 18, 3);
+        addRing(enemy.x, enemy.y, enemy.color, 16);
+        combatText.textContent = `${enemy.type === 'boss' ? '深淵の獣' : enemy.type === 'wisp' ? 'ウィスプ' : 'スライム'} を撃破`;
+        if (Math.random() > 0.55) {
+          drops.push({ x: enemy.x, y: enemy.y, radius: 10, type: Math.random() > 0.22 ? 'shard' : 'gold' });
+        }
+
+        if (enemy.type === 'boss') {
+          updateQuest('defeat-boss', 1, 'completed');
+          objectiveText.textContent = '町へ戻り、勝利を報告しよう';
+          pushLog('深淵の獣を討伐した。荒野の空気が静まっていく。');
+          showToast('Boss Defeated');
+        }
+        levelUp();
+      }
+
+      function updateHero(delta) {
+        const inputX = (keys.has('arrowright') || keys.has('d') ? 1 : 0) - (keys.has('arrowleft') || keys.has('a') ? 1 : 0);
+        const inputY = (keys.has('arrowdown') || keys.has('s') ? 1 : 0) - (keys.has('arrowup') || keys.has('w') ? 1 : 0);
+        const length = Math.hypot(inputX, inputY) || 1;
+        hero.x += (inputX / length) * hero.speed * delta;
+        hero.y += (inputY / length) * hero.speed * delta;
+        if (inputX !== 0) {
+          hero.facing = inputX > 0 ? 1 : -1;
+        }
+        hero.x = clamp(hero.x, 30, width - 30);
+        hero.y = clamp(hero.y, 64, height - 40);
+        hero.invuln = Math.max(0, hero.invuln - delta);
+        hero.attackCooldown = Math.max(0, hero.attackCooldown - delta);
+        hero.spellCooldown = Math.max(0, hero.spellCooldown - delta);
+        hero.mana = clamp(hero.mana + delta * 8, 0, hero.maxMana);
+      }
+
+      function updateEnemies(delta) {
+        for (let index = enemies.length - 1; index >= 0; index -= 1) {
+          const enemy = enemies[index];
+          const dx = hero.x - enemy.x;
+          const dy = hero.y - enemy.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          enemy.x += (dx / dist) * enemy.speed * delta;
+          enemy.y += (dy / dist) * enemy.speed * delta;
+          enemy.cooldown -= delta;
+
+          if (enemy.type === 'wisp' && enemy.cooldown <= 0) {
+            enemy.cooldown = random(1.1, 1.8);
+            projectiles.push({
+              x: enemy.x,
+              y: enemy.y,
+              vx: (dx / dist) * 240,
+              vy: (dy / dist) * 240,
+              radius: 7,
+              life: 2.4,
+              damage: enemy.damage,
+              color: '#8b5cf6',
+              fromHero: false,
+            });
+          }
+
+          if (dist < hero.radius + enemy.radius) {
+            if (hero.invuln <= 0) {
+              hero.hp -= enemy.damage;
+              hero.invuln = 0.6;
+              addEffect(hero.x, hero.y, '#fb7185', 18, 3);
+              screenFlash = 0.18;
+              combatText.textContent = `${enemy.type === 'boss' ? '深淵の獣' : '敵'}から ${enemy.damage} ダメージ`;
+              if (hero.hp <= 0) {
+                hero.hp = 0;
+                triggerGameOver();
+                return;
+              }
+            }
+          }
+
+          if (enemy.hp <= 0) {
+            enemies.splice(index, 1);
+            enemyDefeated(enemy);
+          }
+        }
+      }
+
+      function updateProjectiles(delta) {
+        for (let index = projectiles.length - 1; index >= 0; index -= 1) {
+          const projectile = projectiles[index];
+          projectile.x += projectile.vx * delta;
+          projectile.y += projectile.vy * delta;
+          projectile.life -= delta;
+
+          if (projectile.fromHero) {
+            let removed = false;
+            for (const enemy of enemies) {
+              if (distance(projectile.x, projectile.y, enemy.x, enemy.y) < projectile.radius + enemy.radius) {
+                enemy.hp -= projectile.damage;
+                addEffect(projectile.x, projectile.y, '#22d3ee', 10, 2.5);
+                projectiles.splice(index, 1);
+                removed = true;
+                break;
+              }
+            }
+            if (removed) {
+              continue;
+            }
+          } else if (distance(projectile.x, projectile.y, hero.x, hero.y) < projectile.radius + hero.radius) {
+            if (hero.invuln <= 0) {
+              hero.hp -= projectile.damage;
+              hero.invuln = 0.5;
+              addEffect(hero.x, hero.y, '#fb7185', 14, 2.6);
+              screenFlash = 0.14;
+              if (hero.hp <= 0) {
+                hero.hp = 0;
+                triggerGameOver();
+                return;
+              }
+            }
+            projectiles.splice(index, 1);
+            continue;
+          }
+
+          if (projectile.life <= 0 || projectile.x < -40 || projectile.x > width + 40 || projectile.y < -40 || projectile.y > height + 40) {
+            projectiles.splice(index, 1);
+          }
+        }
+      }
+
+      function updateDrops() {
+        const collectQuest = getQuest('collect-shards');
+        for (let index = drops.length - 1; index >= 0; index -= 1) {
+          const drop = drops[index];
+          if (distance(hero.x, hero.y, drop.x, drop.y) < hero.radius + drop.radius + 4) {
+            if (drop.type === 'shard') {
+              if (collectQuest.status === 'active') {
+                collectQuest.progress += 1;
+                if (collectQuest.progress >= collectQuest.target) {
+                  collectQuest.progress = collectQuest.target;
+                  collectQuest.status = 'completed';
+                  objectiveText.textContent = '荒野に現れたボスを倒そう';
+                  pushLog('星片が揃った。空気が震え、何か大きなものが近づく。');
+                  if (!state.bossUnlocked) {
+                    state.bossUnlocked = true;
+                    updateQuest('defeat-boss', 0, 'active');
+                    spawnEnemy('boss');
+                    pushLog('空が裂け、深淵の獣が姿を現した。');
+                    showToast('Boss Appears');
+                  }
+                } else {
+                  pushLog(`星片を手に入れた (${collectQuest.progress}/${collectQuest.target})`);
+                }
+                updateQuest('collect-shards', collectQuest.progress, collectQuest.status);
+              }
+              hero.gold += 12;
+            } else {
+              hero.gold += 24;
+              pushLog('金貨袋を拾った。');
+            }
+            addRing(drop.x, drop.y, '#22d3ee', 12);
+            drops.splice(index, 1);
+          }
+        }
+      }
+
+      function updateEffects(delta) {
+        for (let index = effects.length - 1; index >= 0; index -= 1) {
+          const effect = effects[index];
+          effect.life -= delta;
+          if (effect.type === 'particle') {
+            effect.x += effect.vx * delta;
+            effect.y += effect.vy * delta;
+            effect.vx *= 0.98;
+            effect.vy *= 0.98;
+          } else if (effect.type === 'ring') {
+            effect.radius += delta * 90;
+          }
+          if (effect.life <= 0) {
+            effects.splice(index, 1);
+          }
+        }
+      }
+
+      function updateTown(delta) {
+        hero.hp = clamp(hero.hp + delta * 2.5, 0, hero.maxHp);
+      }
+
+      function ensureWildsPopulation() {
+        if (state.zone === 'wilds' && enemies.filter((enemy) => enemy.type !== 'boss').length < 3 && !state.bossUnlocked) {
+          spawnWave();
+        }
+      }
+
+      function updateHud() {
+        levelValue.textContent = String(hero.level);
+        goldValue.textContent = String(hero.gold);
+        potionValue.textContent = String(hero.potions);
+        zoneValue.textContent = state.zone === 'town' ? 'Town' : 'Wilds';
+        healthFill.style.width = `${(hero.hp / hero.maxHp) * 100}%`;
+        manaFill.style.width = `${(hero.mana / hero.maxMana) * 100}%`;
+        xpFill.style.width = `${(hero.xp / hero.xpToNext) * 100}%`;
+        const bossEnemy = enemies.find((enemy) => enemy.type === 'boss');
+        bossFill.style.width = bossEnemy
+          ? `${(bossEnemy.hp / bossEnemy.maxHp) * 100}%`
+          : getQuest('defeat-boss')?.status === 'completed'
+            ? '0%'
+            : state.bossUnlocked
+              ? '100%'
+              : '0%';
+        heroStats.textContent = `剣士 Lv${hero.level} / Attack ${hero.attack} / Magic ${hero.magic}`;
+        inventoryText.textContent = `Potion x${hero.potions} / Ether x${hero.ethers} / Gold ${hero.gold}`;
+      }
+
+      function triggerGameOver() {
+        state.running = false;
+        state.gameOver = true;
+        addRing(hero.x, hero.y, '#fb7185', 22);
+        addEffect(hero.x, hero.y, '#fb7185', 40, 4);
+        pushLog('アリアは力尽きた。だが物語はここで終わらない。');
+        showToast('Game Over');
+        centerCard.classList.remove('hidden');
+        centerCard.querySelector('.badge').textContent = 'Defeat';
+        centerCard.querySelector('.big').textContent = 'GAME OVER';
+        centerCard.querySelector('.copy').textContent = '冒険をやり直して、より強く成長しよう。';
+      }
+
+      function drawBackground(time) {
+        const gradient = context.createLinearGradient(0, 0, 0, height);
+        if (state.zone === 'town') {
+          gradient.addColorStop(0, '#082032');
+          gradient.addColorStop(1, '#0f172a');
+        } else {
+          gradient.addColorStop(0, '#120b24');
+          gradient.addColorStop(1, '#020617');
+        }
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, width, height);
+
+        for (const star of stars) {
+          star.y += star.speed * 0.02;
+          if (star.y > height) {
+            star.y = -10;
+            star.x = random(0, width);
+          }
+          context.fillStyle = state.zone === 'town' ? 'rgba(255,255,255,0.3)' : 'rgba(34,211,238,0.45)';
+          context.fillRect(star.x, star.y, star.size, star.size);
+        }
+
+        context.strokeStyle = 'rgba(255,255,255,0.05)';
+        const spacing = state.zone === 'town' ? 56 : 44;
+        for (let x = 0; x < width; x += spacing) {
+          context.beginPath();
+          context.moveTo(x + (time * 8) % spacing, 0);
+          context.lineTo(x + (time * 8) % spacing, height);
+          context.stroke();
+        }
+        for (let y = 60; y < height; y += spacing) {
+          context.beginPath();
+          context.moveTo(0, y + (time * 6) % spacing);
+          context.lineTo(width, y + (time * 6) % spacing);
+          context.stroke();
+        }
+      }
+
+      function drawTownObjects() {
+        context.save();
+        context.fillStyle = '#f59e0b';
+        context.beginPath();
+        context.arc(npc.x, npc.y, npc.radius, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = '#f8fafc';
+        context.font = '700 14px Inter, sans-serif';
+        context.textAlign = 'center';
+        context.fillText(npc.name, npc.x, npc.y - 34);
+        context.restore();
+
+        drawPortal();
+      }
+
+      function drawWildsObjects(time) {
+        drawPortal();
+        context.save();
+        context.fillStyle = 'rgba(148, 163, 184, 0.18)';
+        for (let index = 0; index < 10; index += 1) {
+          const x = 110 + index * 120 + Math.sin(time + index) * 12;
+          const y = 120 + (index % 3) * 150;
+          context.beginPath();
+          context.moveTo(x, y - 18);
+          context.lineTo(x - 12, y + 14);
+          context.lineTo(x + 10, y + 18);
+          context.closePath();
+          context.fill();
+        }
+        context.restore();
+      }
+
+      function drawPortal() {
+        context.save();
+        context.translate(portal.x, portal.y);
+        context.shadowBlur = 24;
+        context.shadowColor = '#22d3ee';
+        context.strokeStyle = '#67e8f9';
+        context.lineWidth = 4;
+        context.beginPath();
+        context.arc(0, 0, portal.radius + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawHero(time) {
+        context.save();
+        context.translate(hero.x, hero.y);
+        context.shadowBlur = 24;
+        context.shadowColor = hero.invuln > 0 ? '#ffffff' : '#22d3ee';
+        context.fillStyle = hero.invuln > 0 ? '#ffffff' : '#67e8f9';
+        context.beginPath();
+        context.arc(0, 0, hero.radius, 0, Math.PI * 2);
+        context.fill();
+        context.strokeStyle = '#f8fafc';
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.lineTo(hero.facing * 20, Math.sin(time * 12) * 2);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawEnemies() {
+        for (const enemy of enemies) {
+          context.save();
+          context.translate(enemy.x, enemy.y);
+          context.shadowBlur = enemy.type === 'boss' ? 28 : 18;
+          context.shadowColor = enemy.color;
+          context.fillStyle = enemy.color;
+          context.beginPath();
+          context.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = '#f8fafc';
+          context.fillRect(-enemy.radius, -enemy.radius - 12, enemy.radius * 2 * (enemy.hp / enemy.maxHp), 5);
+          context.restore();
+        }
+      }
+
+      function drawProjectiles() {
+        for (const projectile of projectiles) {
+          context.save();
+          context.shadowBlur = 16;
+          context.shadowColor = projectile.color;
+          context.fillStyle = projectile.color;
+          context.beginPath();
+          context.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
+      }
+
+      function drawDrops(time) {
+        for (const drop of drops) {
+          context.save();
+          context.translate(drop.x, drop.y + Math.sin(time * 4 + drop.x) * 4);
+          context.shadowBlur = 18;
+          context.shadowColor = drop.type === 'shard' ? '#22d3ee' : '#f59e0b';
+          context.fillStyle = drop.type === 'shard' ? '#22d3ee' : '#f59e0b';
+          context.beginPath();
+          context.moveTo(0, -10);
+          context.lineTo(8, 0);
+          context.lineTo(0, 10);
+          context.lineTo(-8, 0);
+          context.closePath();
+          context.fill();
+          context.restore();
+        }
+      }
+
+      function drawEffects() {
+        for (const effect of effects) {
+          context.save();
+          context.globalAlpha = effect.life / effect.maxLife;
+          if (effect.type === 'particle') {
+            context.fillStyle = effect.color;
+            context.beginPath();
+            context.arc(effect.x, effect.y, effect.size, 0, Math.PI * 2);
+            context.fill();
+          } else {
+            context.strokeStyle = effect.color;
+            context.lineWidth = 3;
+            context.beginPath();
+            context.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2);
+            context.stroke();
+          }
+          context.restore();
+        }
+      }
+
+      function loop(timestamp) {
+        const delta = Math.min((timestamp - lastTime) / 1000 || 0.016, 0.033);
+        lastTime = timestamp;
+        const time = timestamp / 1000;
+
+        context.clearRect(0, 0, width, height);
+        drawBackground(time);
+
+        if (state.zone === 'town') {
+          drawTownObjects();
+        } else {
+          drawWildsObjects(time);
+        }
+
+        if (state.running && !state.paused && !state.gameOver) {
+          updateHero(delta);
+          if (state.zone === 'town') {
+            updateTown(delta);
+          } else {
+            updateEnemies(delta);
+            updateProjectiles(delta);
+            updateDrops();
+            ensureWildsPopulation();
+          }
+          updateEffects(delta);
+          updateHud();
+        } else {
+          updateEffects(delta);
+        }
+
+        drawDrops(time);
+        drawEnemies();
+        drawProjectiles();
+        drawHero(time);
+        drawEffects();
+
+        if (screenFlash > 0) {
+          context.save();
+          context.globalAlpha = screenFlash;
+          context.fillStyle = '#fb7185';
+          context.fillRect(0, 0, width, height);
+          context.restore();
+          screenFlash = Math.max(0, screenFlash - delta * 1.8);
+        }
+
+        if (state.paused) {
+          context.save();
+          context.fillStyle = 'rgba(2,6,23,0.45)';
+          context.fillRect(0, 0, width, height);
+          context.fillStyle = '#e2e8f0';
+          context.font = '700 42px Inter, sans-serif';
+          context.textAlign = 'center';
+          context.fillText('PAUSED', width / 2, height / 2);
+          context.restore();
+        }
+
+        animationId = requestAnimationFrame(loop);
+      }
+
+      function togglePause() {
+        if (!state.running || state.gameOver) {
+          return;
+        }
+        state.paused = !state.paused;
+        showToast(state.paused ? 'Paused' : 'Resumed');
+      }
+
+      window.addEventListener('resize', () => {
+        resize();
+        initStars();
+      });
+
+      window.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+          keys.add(key);
+        }
+        if (key === 'j') {
+          castSword();
+        }
+        if (key === 'k') {
+          castSpell();
+        }
+        if (key === 'l') {
+          usePotion();
+        }
+        if (key === 'e') {
+          talkOrTravel();
+        }
+        if (key === 'p') {
+          togglePause();
+        }
+      });
+
+      window.addEventListener('keyup', (event) => {
+        keys.delete(event.key.toLowerCase());
+      });
+
+      startButton.addEventListener('click', startGame);
+      overlayStartButton.addEventListener('click', startGame);
+      pauseButton.addEventListener('click', togglePause);
+
+      resize();
+      initStars();
+      setupQuests();
+      renderLog();
+      updateHud();
+      animationId = requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
